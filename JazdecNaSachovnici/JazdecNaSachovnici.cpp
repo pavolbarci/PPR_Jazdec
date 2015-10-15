@@ -26,7 +26,7 @@ int main()
 
 int val(Coordinate c)
 {
-	if (1==1)
+	if (1 == 1)
 	{
 
 		return 1;
