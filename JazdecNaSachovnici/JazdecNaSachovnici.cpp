@@ -19,6 +19,7 @@ void Coordinate::setCoordinate(int x, int y) {
 
 int main()
 {
+	//fuckniggers
 	Coordinate co;
 	co.setCoordinate(1, 2);
 	return 0;
