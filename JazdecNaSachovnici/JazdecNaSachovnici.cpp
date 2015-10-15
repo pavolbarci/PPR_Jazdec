@@ -19,7 +19,7 @@ void Coordinate::setCoordinate(int x, int y) {
 
 int main()
 {
-	//fuckniggers
+	//get money fuckbitches
 	Coordinate co;
 	co.setCoordinate(1, 2);
 	return 0;
