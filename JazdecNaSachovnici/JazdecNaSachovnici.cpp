@@ -2,7 +2,10 @@
 //
 
 #include "stdafx.h"
-#include "stdio.h"
+#include <fstream>
+#include <string>
+
+using namespace std;
 
 class Coordinate {
 private:
@@ -19,9 +22,10 @@ void Coordinate::setCoordinate(int x, int y) {
 
 int main()
 {
-	//DINDU NUFFINS!
+	
 	Coordinate co;
 	co.setCoordinate(1, 2);
+	
 	return 0;
 }
 
