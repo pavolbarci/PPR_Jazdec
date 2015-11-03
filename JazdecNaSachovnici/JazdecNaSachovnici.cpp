@@ -5,18 +5,23 @@
 #include <fstream>
 #include <list>
 #include <string>
+#include <sstream>
 #include <iostream>
 
 using namespace std;
 
+//objekt reprezentujuci suradnicu
 class Coordinate {
 private:
 	int x, y;
 public:
 	void SetCoordinate(int, int);
-	bool IsEqual(Coordinate); //porovna 2 suradnice ci sa rovnaju a teda, ci uz je na suradnici panacik
+	bool IsEqual(Coordinate); 
+	int GetX();
+	int GetY();
 };
 
+//nastavi suradnice
 void Coordinate::SetCoordinate(int x, int y) {
 	this->x = x;
 	this->y = y;
@@ -34,7 +39,11 @@ bool Coordinate::IsEqual(Coordinate coordinate) {
 	}
 }
 
-//object ktory ma v sebe konfiguraciu
+//vrati x a y suradnicu
+int Coordinate::GetX() { return x; }
+int Coordinate::GetY() { return y; }
+
+//object ktory ma v sebe pociatocnu konfiguraciu
 class Configuration {
 private:
 	int chessBoardSize, numberOfChessPieces;
@@ -42,71 +51,135 @@ private:
 	list<Coordinate> chessPieces; //tu budu suradnice kde su panacikovia
 public:
 	void SetChessBoard(int, int);
-	void SetHorseCoordinate(int, int);
+	string SetHorseCoordinate(int, int);
 	string AddChessPieceLocation(string);
-	//zapise pociatocnu konfiguraciu do suboru
-	//void PrintConfigurationToFile();
+	void PrintConfigurationToFile();
+	//gettre na konfiguracne parametre, ale asi netreba
+	//int GetChessBoardSize();
+	//int GetNumberOfChessPieces();
+	//Coordinate GetHorseCoordinate();
+	//list<Coordinate> GetChessPiecesCoordinates();
 };
 
+//globalna premenna konfiguracie (modelu)
+Configuration m_configuration;
+
+//gettre na konfiguracne parametre, ale asi netreba
+//int Configuration::GetChessBoardSize() { return m_configuration.chessBoardSize; }
+//int Configuration::GetNumberOfChessPieces() { return m_configuration.numberOfChessPieces; }
+//Coordinate Configuration::GetHorseCoordinate() { return m_configuration.horse; }
+//list<Coordinate> Configuration::GetChessPiecesCoordinates() { return m_configuration.chessPieces; }
+
+//nastavi zakladne parametre, velkost a pocet panacikov
 void Configuration::SetChessBoard(int chessBoardSize, int numberOfChessPieces) {
 	this->chessBoardSize = chessBoardSize;
 	this->numberOfChessPieces = numberOfChessPieces;
 }
 
-void Configuration::SetHorseCoordinate(int x, int y) {
-	//TODO: doplnit testovanie, ci to nie je out of bounds
+//nastavi konove suradnice
+string Configuration::SetHorseCoordinate(int x, int y) {
+	if (x >= m_configuration.chessBoardSize && x >= m_configuration.chessBoardSize)
+	{
+		return "Coordinates are out of bounds";
+	}
 	this->horse.SetCoordinate(x, y);
+
+	return "";
 }
 
 //vstupom je riadok zo suboru, nastavi podla neho suradnicu a porovna vsetky existujuce suradnice
 //ak sa rovnaju tak vyhodi string, inak vyhodi empty
 string Configuration::AddChessPieceLocation(string str) {
 	Coordinate newCooordinate;
-	int x = 2;//TODO spravit parsovanie riadku a nech x a y zada d suradnici
-	int y = 4;
+	size_t pos = str.find(",");
+	int x = atoi(str.substr(0, pos).c_str());
+	int y = atoi(str.substr(pos + 1).c_str());
+
+	if (x >= m_configuration.chessBoardSize && x >= m_configuration.chessBoardSize)
+	{
+		ostringstream oss;
+		oss << "Coordinate x = " << x << ", y = " << y << " is out of bounds" << endl;
+		return oss.str();
+	}
+
 	newCooordinate.SetCoordinate(x, y);
+
 	for each (Coordinate coordinate in chessPieces)
 	{
 		if (coordinate.IsEqual(newCooordinate))
 		{
-			return "There is allready a chesspiece on this place";
+			ostringstream oss;
+			oss << "There is allready a chesspiece on coordinate x = " << x << ", y = " << y << endl;
+			return oss.str();
 		}
 	}
 	
-	//TODO checknut, ci nie je out of bounds
 	chessPieces.push_back(newCooordinate);
 	return "";
 }
 
-Configuration m_configuration;
+//zapise pociatocnu konfiguraciu do suboru
+void Configuration::PrintConfigurationToFile()
+{
+	ofstream output;
+	output.open("output_configuration.txt");
+
+	output << "Chessboard size is set to: " << m_configuration.chessBoardSize << endl;
+	output << "Number of chesspieces on chessboard is: " << m_configuration.numberOfChessPieces << endl;
+	output << "Horse location coordinates are: x = " << m_configuration.horse.GetX() << ", y = " << m_configuration.horse.GetY() << endl;
+	output << "Chesspieces coordinates are: " << endl;
+
+	int counter = 1;
+	for each (Coordinate coordinate in m_configuration.chessPieces)
+	{
+		output << "\t" << counter << ": x = " << coordinate.GetX() << ", y = " << coordinate.GetY() << endl;
+		counter++;
+	}
+	output.close();
+}
 
 //nastavi pociatocnu konfiguraciu zo suboru
-void InicializeConfiguration( )
+string InicializeConfiguration( )
 {
 	ifstream file("input.txt");
-	string size, pieces, str;
+	string size, pieces, str, errorMessage;
 	getline(file, size);	//prvy riadok je velkost plochy
 	getline(file, pieces);	//druhy riadok je pocet panacikov
 
 	m_configuration.SetChessBoard(atoi(size.c_str()), atoi(pieces.c_str()));
-	getline(file, str);//treti riadok je pozicia konika
-	//TODO parsovanie suradnice
-	m_configuration.SetHorseCoordinate(2,5);
+	getline(file, str);	//treti riadok je pozicia konika, kde x a y su oddelene ciarkou
+	
+	size_t pos = str.find(",");
+	errorMessage = m_configuration.SetHorseCoordinate(atoi(str.substr(0, pos).c_str()), atoi(str.substr(pos + 1).c_str()));
+	if (!errorMessage.empty())//pokial sa vrati chybova hlaska, vyhodi ju do mainu, stopne sa program a hlaska sa vypise
+	{
+		return errorMessage;
+	}
 
 	while (getline(file, str))//prechadza zvysne riadky a uklada do onfiguracie suradnice
 	{
-		string message = m_configuration.AddChessPieceLocation(str);
-		if (!message.empty())//pokial teda vrati sa string, vypise ho a zastavi sa to, inak pokracuje
+		errorMessage = m_configuration.AddChessPieceLocation(str);
+		if (!errorMessage.empty())//pokial sa vrati chybova hlaska, vyhodi ju do mainu, stopne sa program a hlaska sa vypise
 		{
-			cout << message;
-			break;
+			return errorMessage;
 		}
 	}
+
+	return "";
 }
 
 int main()
 {
-	InicializeConfiguration();
+	string errorMessage = InicializeConfiguration();
+	
+	if (errorMessage.empty())
+	{
+		m_configuration.PrintConfigurationToFile();
+	}
+	else
+	{
+		cout << errorMessage << endl;
+	}
 	return 0;
 }
 
