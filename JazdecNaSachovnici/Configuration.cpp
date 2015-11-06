@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Configuration.h"
+#include "Coordinate.h"
 #include <sstream>
 #include <fstream>
 
@@ -12,12 +13,12 @@ void Configuration::SetChessBoard(int chessBoardSize, int numberOfChessPieces) {
 }
 
 //nastavi konove suradnice
-string Configuration::SetHorseCoordinate(int x, int y) {
-	if (x >= this->chessBoardSize && x >= this->chessBoardSize)
+string Configuration::SetHorseCoordinate(Coordinate coordinate) {
+	if (coordinate.GetX() >= this->chessBoardSize && coordinate.GetY() >= this->chessBoardSize)
 	{
 		return "Coordinates are out of bounds";
 	}
-	this->horse.SetCoordinate(x, y);
+	this->horse = coordinate;
 
 	return "";
 }
@@ -71,6 +72,19 @@ void Configuration::PrintConfigurationToFile()
 		counter++;
 	}
 	output.close();
+}
+
+//pokial sa na pozicii konika nachadza figurka, odstrani ju zo zoznamu figurok
+void Configuration::RemoveChessPiece()
+{
+	for (list<Coordinate>::iterator it = chessPieces.begin(); it != chessPieces.end(); it++)
+	{
+		if (it->IsEqual(horse))
+		{
+			chessPieces.erase(it);
+			break;
+		}
+	}
 }
 
 //gettre na konfiguracne parametre

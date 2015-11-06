@@ -31,19 +31,27 @@ string InicializeConfiguration()
 	getline(file, str);	//treti riadok je pozicia konika, kde x a y su oddelene ciarkou
 
 	size_t pos = str.find(",");
-	errorMessage = m_configuration.SetHorseCoordinate(atoi(str.substr(0, pos).c_str()), atoi(str.substr(pos + 1).c_str()));
+	Coordinate horseCoordinate;
+	horseCoordinate.SetCoordinate(atoi(str.substr(0, pos).c_str()), atoi(str.substr(pos + 1).c_str()));
+	errorMessage = m_configuration.SetHorseCoordinate(horseCoordinate);
 	if (!errorMessage.empty())//pokial sa vrati chybova hlaska, vyhodi ju do mainu, stopne sa program a hlaska sa vypise
 	{
 		return errorMessage;
 	}
 
-	while (getline(file, str))//prechadza zvysne riadky a uklada do onfiguracie suradnice
+	for (int i = 0; i < m_configuration.GetNumberOfChessPieces(); i++)//prechadza zvysne riadky iba do poctu panacikov a uklada do onfiguracie suradnice
 	{
+		getline(file, str);
 		errorMessage = m_configuration.AddChessPieceLocation(str);
 		if (!errorMessage.empty())//pokial sa vrati chybova hlaska, vyhodi ju do mainu, stopne sa program a hlaska sa vypise
 		{
 			return errorMessage;
 		}
+	}
+
+	if (m_configuration.GetNumberOfChessPieces != m_configuration.GetChessPiecesCoordinates().size())
+	{
+		return "You have declared " + m_configuration.GetNumberOfChessPieces + " but only " + m_configuration.GetChessPiecesCoordinates().size() + " coordinates.";
 	}
 
 	return "";
@@ -161,6 +169,42 @@ list<CoordinateWithValue> NextStep(Coordinate* coordinate)
 	return nextCoordinatesList;
 }
 
+//vyhlada a vrati coordinate najlepsieho mozneho kroku
+Coordinate FindBestWay()
+{
+	int bestValue = 0;
+	//pokial nenajde, vrati prvy (toto nejako treba zmenit, lebo sa zacykli)
+	Coordinate coordinate = (m_coordinatesWithValue.begin())->GetCoordinate();
+
+	//prechadza X
+	for (list<CoordinateWithValue>::iterator it1 = m_coordinatesWithValue.begin(); it1 != m_coordinatesWithValue.end(); it1++)
+	{
+		//musel som to vytiahnut
+		list<CoordinateWithValue> listCoo = it1->GetNextCoordinates();
+
+		//prechadza next(x)
+		for (list<CoordinateWithValue>::iterator it2 = listCoo.begin(); it2 != listCoo.end(); it2++)
+		{
+			//vypocita value
+			int actualValue = 8 * it1->GetValue() + it2->GetValue();
+			if (actualValue > bestValue)
+			{
+				//ak je value vacsia ako best, best nastavu na actual a nastavi aktualny X coordinate
+				bestValue = actualValue;
+				coordinate = (*it1).GetCoordinate();
+			}
+		}
+	}
+
+	return coordinate;
+}
+
+void Jump()
+{
+	m_configuration.SetHorseCoordinate(FindBestWay());
+	m_configuration.RemoveChessPiece();
+}
+
 
 int main()
 {
@@ -175,13 +219,16 @@ int main()
 		cout << errorMessage << endl;
 	}
 
-	m_coordinatesWithValue = NextStep(NULL);
-
-	for (list<CoordinateWithValue>::iterator it = m_coordinatesWithValue.begin(); it != m_coordinatesWithValue.end(); it++)
+	while (1 == 1)
 	{
-		(*it).SetNextList(NextStep(&(*it).GetCoordinate()));
-	}
+		m_coordinatesWithValue = NextStep(NULL);
 
+		for (list<CoordinateWithValue>::iterator it = m_coordinatesWithValue.begin(); it != m_coordinatesWithValue.end(); it++)
+		{
+			(*it).SetNextList(NextStep(&(*it).GetCoordinate()));
+		}
+		Jump();
+	}
 	printf("schluss");
 	return 0;
 }

@@ -14,9 +14,10 @@ private:
 	list<Coordinate> chessPieces; //tu budu suradnice kde su panacikovia
 public:
 	void SetChessBoard(int, int);
-	string SetHorseCoordinate(int, int);
+	string SetHorseCoordinate(Coordinate);
 	string AddChessPieceLocation(string);
-	void PrintConfigurationToFile();	
+	void PrintConfigurationToFile();
+	void RemoveChessPiece();
 	int GetChessBoardSize();
 	int GetNumberOfChessPieces();
 	Coordinate GetHorseCoordinate();
