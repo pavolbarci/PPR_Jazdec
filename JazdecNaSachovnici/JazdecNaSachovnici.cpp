@@ -7,8 +7,13 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <vector>
+#include <algorithm>
+
 
 using namespace std;
+
+
 
 //objekt reprezentujuci suradnicu
 class Coordinate {
@@ -55,11 +60,30 @@ public:
 	string AddChessPieceLocation(string);
 	void PrintConfigurationToFile();
 	//gettre na konfiguracne parametre, ale asi netreba
-	//int GetChessBoardSize();
-	//int GetNumberOfChessPieces();
-	//Coordinate GetHorseCoordinate();
-	//list<Coordinate> GetChessPiecesCoordinates();
+	int GetChessBoardSize()
+	{
+		return chessBoardSize;
+	}
+
+	int GetNumberOfChessPieces();
+	Coordinate GetHorseCoordinate()
+	{
+		return horse;
+	}
+	list<Coordinate> GetChessPiecesCoordinates()
+	{
+		return chessPieces;
+	}
 };
+
+class coordinateValue {
+public:
+	int value;
+	Coordinate coo;
+	list <coordinateValue> nextCVList;
+};
+
+
 
 //globalna premenna konfiguracie (modelu)
 Configuration m_configuration;
@@ -167,6 +191,208 @@ string InicializeConfiguration( )
 
 	return "";
 }
+bool isValid(int nextX, int nextY, int size)
+{
+	if (nextX < size && nextY < size && nextX > -1 && nextY>-1)
+	{
+		return true;
+	}
+	return false;
+}
+
+int val(Coordinate c)
+{
+	list<Coordinate> pieces = m_configuration.GetChessPiecesCoordinates();
+
+	for each (Coordinate coordinate in pieces)
+	{
+		if (coordinate.IsEqual(c))
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+list<coordinateValue> coordinateValueList;
+
+void nextStep()
+{
+	int x = m_configuration.GetHorseCoordinate().GetX();
+	int y = m_configuration.GetHorseCoordinate().GetY();
+	int size = m_configuration.GetChessBoardSize();
+	list<Coordinate> nextPossible;
+	coordinateValue coordinateVal;
+	
+	Coordinate nxt;
+
+
+	if (isValid(x + 2, y + 1, size))
+	{
+		nxt.SetCoordinate(x + 2, y + 1);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);
+		coordinateValueList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x + 2, y - 1, size))
+	{
+		nxt.SetCoordinate(x + 2, y - 1);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		coordinateValueList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x - 2, y + 1, size))
+	{
+		nxt.SetCoordinate(x - 2, y + 1);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		coordinateValueList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x - 2, y - 1, size))
+	{
+		nxt.SetCoordinate(x - 2, y - 1);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		coordinateValueList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x + 1, y + 2, size))
+	{
+		nxt.SetCoordinate(x + 1, y + 2);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		coordinateValueList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x - 1, y + 2, size))
+	{
+		nxt.SetCoordinate(x - 1, y + 2);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		coordinateValueList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x - 1, y - 2, size))
+	{
+		nxt.SetCoordinate(x - 1, y - 2);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		coordinateValueList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x + 1, y - 2, size))
+	{
+		nxt.SetCoordinate(x + 1, y - 2);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		coordinateValueList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	//coordinateValueList.sort(val);
+//	return (coordinateValueList);
+
+}
+
+list<coordinateValue> nextStep(Coordinate horsePosition)
+{
+	//Coordinate horsePosition = m_configuration.GetHorseCoordinate();
+	list<coordinateValue> cvList;
+	int x = horsePosition.GetX();
+	int y = horsePosition.GetY();
+	int size = m_configuration.GetChessBoardSize();
+	list<Coordinate> nextPossible;
+	coordinateValue coordinateVal;
+
+	Coordinate nxt;
+
+
+	if (isValid(x + 2, y + 1, size))
+	{
+		nxt.SetCoordinate(x + 2, y + 1);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);
+		cvList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x + 2, y - 1, size))
+	{
+		nxt.SetCoordinate(x + 2, y - 1);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		cvList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x - 2, y + 1, size))
+	{
+		nxt.SetCoordinate(x - 2, y + 1);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		cvList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x - 2, y - 1, size))
+	{
+		nxt.SetCoordinate(x - 2, y - 1);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		cvList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x + 1, y + 2, size))
+	{
+		nxt.SetCoordinate(x + 1, y + 2);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		cvList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x - 1, y + 2, size))
+	{
+		nxt.SetCoordinate(x - 1, y + 2);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		cvList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x - 1, y - 2, size))
+	{
+		nxt.SetCoordinate(x - 1, y - 2);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		cvList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	if (isValid(x + 1, y - 2, size))
+	{
+		nxt.SetCoordinate(x + 1, y - 2);
+		coordinateVal.coo = nxt;
+		coordinateVal.value = val(nxt);;
+		cvList.push_back(coordinateVal);
+		nextPossible.push_back(nxt);
+	}
+
+	return cvList;
+
+}
+
 
 int main()
 {
@@ -180,15 +406,19 @@ int main()
 	{
 		cout << errorMessage << endl;
 	}
-	return 0;
-}
+	
+	nextStep();
 
-int val(Coordinate c)
-{
-	if (1 == 1)
+	for (list<coordinateValue>::iterator it = coordinateValueList.begin(); it != coordinateValueList.end(); it++)
 	{
-
-		return 1;
+		(*it).nextCVList = nextStep((*it).coo);
 	}
+
+	printf("schluss");
 	return 0;
 }
+
+
+
+
+
