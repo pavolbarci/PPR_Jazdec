@@ -18,12 +18,14 @@ using namespace std;
 //globalna premenna konfiguracie (modelu)
 Configuration m_configuration;
 list<CoordinateWithValue> m_coordinatesWithValue;
-int m_visited[10][10];
+int m_visited[100][100];
 
 //nastavi pociatocnu konfiguraciu zo suboru
 string InicializeConfiguration()
 {
 	ifstream file("input.txt");
+	//ifstream file("tempinput.txt");
+	//ifstream file("100input.txt");
 	string size, pieces, str, errorMessage;
 	getline(file, size);	//prvy riadok je velkost plochy
 	getline(file, pieces);	//druhy riadok je pocet panacikov
@@ -176,6 +178,8 @@ list<CoordinateWithValue> NextStep(Coordinate* coordinate)
 Coordinate FindBestWay()
 {
 	int bestValue = 0;
+	int leastVisited = 0;
+	Coordinate leastVisitedC;
 	//pokial nenajde, vrati prvy (toto nejako treba zmenit, lebo sa zacykli)
 
 	Coordinate coordinate = (m_coordinatesWithValue.begin())->GetCoordinate();
@@ -202,26 +206,45 @@ Coordinate FindBestWay()
 				if (bestValue == 9)
 				{
 					m_visited[coordinate.GetX()][coordinate.GetY()]++;
+					cout << coordinate.GetX();
+					cout << ",";
+					cout << coordinate.GetY() << endl;
 					return coordinate;
 				}
 			}
 		}
 	}
+	leastVisitedC = coordinate;
+
 	if (m_visited[coordinate.GetX()][coordinate.GetY()] != 0 && bestValue == 0)
 	{
+		leastVisited = m_visited[coordinate.GetX()][coordinate.GetY()];
+
 		for (list<CoordinateWithValue>::iterator it3 = m_coordinatesWithValue.begin(); it3 != m_coordinatesWithValue.end(); it3++)
 		{
 			if (m_visited[it3->GetCoordinate().GetX()][it3->GetCoordinate().GetY()] == 0)
 			{
+
 				m_visited[coordinate.GetX()][coordinate.GetY()]++;
 				coordinate = (*it3).GetCoordinate();
+			}
+			else
+			{
+				if (leastVisited > m_visited[it3->GetCoordinate().GetX()][it3->GetCoordinate().GetY()])
+				{
+					leastVisited = m_visited[it3->GetCoordinate().GetX()][it3->GetCoordinate().GetY()];
+					leastVisitedC = it3->GetCoordinate();
+				}
 			}
 		}
 
 	}
 
-		m_visited[coordinate.GetX()][coordinate.GetY()]++;
-		return coordinate;
+		m_visited[leastVisitedC.GetX()][leastVisitedC.GetY()]++;
+		cout << leastVisitedC.GetX();
+		cout << ",";
+		cout << leastVisitedC.GetY() << endl;
+		return leastVisitedC;
 	
 }
 
