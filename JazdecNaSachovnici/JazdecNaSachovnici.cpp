@@ -18,6 +18,7 @@ using namespace std;
 //globalna premenna konfiguracie (modelu)
 Configuration m_configuration;
 list<CoordinateWithValue> m_coordinatesWithValue;
+int m_visited[10][10];
 
 //nastavi pociatocnu konfiguraciu zo suboru
 string InicializeConfiguration()
@@ -49,9 +50,11 @@ string InicializeConfiguration()
 		}
 	}
 
-	if (m_configuration.GetNumberOfChessPieces != m_configuration.GetChessPiecesCoordinates().size())
+	if (m_configuration.GetNumberOfChessPieces() != m_configuration.GetChessPiecesCoordinates().size())
 	{
-		return "You have declared " + m_configuration.GetNumberOfChessPieces + " but only " + m_configuration.GetChessPiecesCoordinates().size() + " coordinates.";
+		ostringstream oss;
+		oss << "You have declared " << m_configuration.GetNumberOfChessPieces() << " but only " << m_configuration.GetChessPiecesCoordinates().size() << " coordinates." << endl;
+		return oss.str();
 	}
 
 	return "";
@@ -174,8 +177,12 @@ Coordinate FindBestWay()
 {
 	int bestValue = 0;
 	//pokial nenajde, vrati prvy (toto nejako treba zmenit, lebo sa zacykli)
-	Coordinate coordinate = (m_coordinatesWithValue.begin())->GetCoordinate();
 
+	Coordinate coordinate = (m_coordinatesWithValue.begin())->GetCoordinate();
+	if (m_visited[m_coordinatesWithValue.begin()->GetCoordinate().GetX()][m_coordinatesWithValue.begin()->GetCoordinate().GetY()]==0)
+	{
+		Coordinate coordinate = (m_coordinatesWithValue.begin())->GetCoordinate();
+	}
 	//prechadza X
 	for (list<CoordinateWithValue>::iterator it1 = m_coordinatesWithValue.begin(); it1 != m_coordinatesWithValue.end(); it1++)
 	{
@@ -192,11 +199,30 @@ Coordinate FindBestWay()
 				//ak je value vacsia ako best, best nastavu na actual a nastavi aktualny X coordinate
 				bestValue = actualValue;
 				coordinate = (*it1).GetCoordinate();
+				if (bestValue == 9)
+				{
+					m_visited[coordinate.GetX()][coordinate.GetY()]++;
+					return coordinate;
+				}
 			}
 		}
 	}
+	if (m_visited[coordinate.GetX()][coordinate.GetY()] != 0 && bestValue == 0)
+	{
+		for (list<CoordinateWithValue>::iterator it3 = m_coordinatesWithValue.begin(); it3 != m_coordinatesWithValue.end(); it3++)
+		{
+			if (m_visited[it3->GetCoordinate().GetX()][it3->GetCoordinate().GetY()] == 0)
+			{
+				m_visited[coordinate.GetX()][coordinate.GetY()]++;
+				coordinate = (*it3).GetCoordinate();
+			}
+		}
 
-	return coordinate;
+	}
+
+		m_visited[coordinate.GetX()][coordinate.GetY()]++;
+		return coordinate;
+	
 }
 
 void Jump()
@@ -219,8 +245,11 @@ int main()
 		cout << errorMessage << endl;
 	}
 
-	while (1 == 1)
+	int i=0;
+
+	while (i<m_configuration.GetChessBoardSize()*m_configuration.GetChessBoardSize() && m_configuration.GetChessPiecesCoordinates().size() !=0)
 	{
+		i++;
 		m_coordinatesWithValue = NextStep(NULL);
 
 		for (list<CoordinateWithValue>::iterator it = m_coordinatesWithValue.begin(); it != m_coordinatesWithValue.end(); it++)

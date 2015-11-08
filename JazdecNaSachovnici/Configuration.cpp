@@ -13,7 +13,7 @@ void Configuration::SetChessBoard(int chessBoardSize, int numberOfChessPieces) {
 }
 
 //nastavi konove suradnice
-string Configuration::SetHorseCoordinate(Coordinate coordinate) {
+string Configuration::SetHorseCoordinate(Coordinate coordinate) { 
 	if (coordinate.GetX() >= this->chessBoardSize && coordinate.GetY() >= this->chessBoardSize)
 	{
 		return "Coordinates are out of bounds";
