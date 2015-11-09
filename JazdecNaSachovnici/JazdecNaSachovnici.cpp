@@ -565,9 +565,7 @@ void FindBestWay()
 	list<CoordinateWithValue> actualSolution;
 	list<CoordinateWithValue> nextSteps = NextStep(NULL);
 	list<CoordinateWithValue> listsss;
-	int leastVisited = 0;
-	Coordinate leastVisitedC;
-
+	
 	do
 	{
 		int moveCoutner = 0;
@@ -580,14 +578,8 @@ void FindBestWay()
 		//podmienka, 4i je horna mez/dolna mez a porovnat s existujucim najlepsim riesenim
 		Coordinate lastCoordinate;
 
-		
-
-
-		for (list<CoordinateWithValue>::iterator it = nextSteps.begin(); it != nextSteps.end(); it++)
-		{
-			(*it).SetNextList(NextStep(&(*it)));
-		}
 		konik.SetNextList(nextSteps);
+
 		actualSolution.push_back(konik);
 
 		while ((moveCoutner < m_upperLimit) && chessPiecesPositions.size() != 0)
@@ -601,29 +593,18 @@ void FindBestWay()
 			}
 			actualSolution.push_back(Jump(&chessPiecesPositions));*/
 
-			nextSteps = NextStep(&actualSolution.back());
+			
 
 			for (list<CoordinateWithValue>::iterator it = nextSteps.begin(); it != nextSteps.end(); it++)
 			{
 				(*it).SetNextList(NextStep(&(*it)));
 			}
-
 			
 
 			//toto treba podla sortu pushovat a nie ako kokot takto random, ale mozem ja jebat kto sa ma v tej sort funkcii vyznat
 			//tiez tam treba dat pointer/referenciu, toto neviem co spravi, pojebane c++
-			//actualSolution.push_back(actualSolution.back().GetNextCoordinates().front());
 
-			if (m_visited[nextSteps.front().GetCoordinate().GetX()][nextSteps.front().GetCoordinate().GetY()] == 0)
-			{
-				actualSolution.push_back(nextSteps.front());
-				m_visited[nextSteps.front().GetCoordinate().GetX()][nextSteps.front().GetCoordinate().GetY()]++;
-			}
-			else
-			{
-				actualSolution.push_back(nextSteps.back());
-				m_visited[nextSteps.front().GetCoordinate().GetX()][nextSteps.front().GetCoordinate().GetY()]++;
-			}
+			actualSolution.push_back(actualSolution.back().GetNextCoordinates().front());
 
 
 			/*	if (moveCoutner == 1)
