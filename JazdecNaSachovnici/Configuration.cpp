@@ -42,9 +42,9 @@ void Configuration::InicializeChessBoard()
 	}
 }
 
-void Configuration::SetChessboardsCoordinateValue(Coordinate coordinate)
+void Configuration::SetChessboardsCoordinateValue(Coordinate coordinate, int val)
 {
-	this->chessBoard[coordinate.GetX()][coordinate.GetY()].SetValue(0);
+	this->chessBoard[coordinate.GetX()][coordinate.GetY()].SetValue(val);
 }
 
 //vstupom je riadok zo suboru, nastavi podla neho suradnicu a porovna vsetky existujuce suradnice
@@ -122,3 +122,15 @@ CoordinateWithValue Configuration::GetCoordinationWithValue(int x, int y) { retu
 
 
 int Configuration::GetValue(Coordinate coordinate) { return this->chessBoard[coordinate.GetX()][coordinate.GetY()].GetValue(); }
+
+bool Configuration::WasThereChessPiece(Coordinate coordinate)
+{
+	for each (Coordinate var in this->chessPieces)
+	{
+		if (var.IsEqual(coordinate))
+		{
+			return true;
+		}
+	}
+	return false;
+}
