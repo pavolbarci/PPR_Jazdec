@@ -106,8 +106,11 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	}
 	else
 	{
-		x = coordinate->GetCoordinate().GetX();
-		y = coordinate->GetCoordinate().GetY();
+		CoordinateWithValue temp = *coordinate;
+
+		x = temp.GetCoordinate().GetX();
+		y = temp.GetCoordinate().GetY();
+					
 	}
 
 	int size = m_configuration.GetChessBoardSize();
@@ -118,14 +121,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x + 2, y + 1);
 		CWV.SetCoordinate(nextCoordinate);
-		if (coordinate != NULL)
-		{
-			CWV.SetValue(8 * m_configuration.GetValue(coordinate->GetCoordinate()) + m_configuration.GetValue(nextCoordinate));
-		}
-		else
-		{
-			CWV.SetValue(m_configuration.GetValue(nextCoordinate));
-		}
+		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -133,14 +129,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x + 2, y - 1);
 		CWV.SetCoordinate(nextCoordinate);
-		if (coordinate != NULL)
-		{
-			CWV.SetValue(8 * m_configuration.GetValue(coordinate->GetCoordinate()) + m_configuration.GetValue(nextCoordinate));
-		}
-		else
-		{
-			CWV.SetValue(m_configuration.GetValue(nextCoordinate));
-		}
+		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -148,14 +137,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x - 2, y + 1);
 		CWV.SetCoordinate(nextCoordinate);
-		if (coordinate != NULL)
-		{
-			CWV.SetValue(8 * m_configuration.GetValue(coordinate->GetCoordinate()) + m_configuration.GetValue(nextCoordinate));
-		}
-		else
-		{
-			CWV.SetValue(m_configuration.GetValue(nextCoordinate));
-		}
+		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -163,14 +145,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x - 2, y - 1);
 		CWV.SetCoordinate(nextCoordinate);
-		if (coordinate != NULL)
-		{
-			CWV.SetValue(8 * m_configuration.GetValue(coordinate->GetCoordinate()) + m_configuration.GetValue(nextCoordinate));
-		}
-		else
-		{
-			CWV.SetValue(m_configuration.GetValue(nextCoordinate));
-		}
+		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -178,14 +153,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x + 1, y + 2);
 		CWV.SetCoordinate(nextCoordinate);
-		if (coordinate != NULL)
-		{
-			CWV.SetValue(8 * m_configuration.GetValue(coordinate->GetCoordinate()) + m_configuration.GetValue(nextCoordinate));
-		}
-		else
-		{
-			CWV.SetValue(m_configuration.GetValue(nextCoordinate));
-		}
+		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -193,14 +161,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x - 1, y + 2);
 		CWV.SetCoordinate(nextCoordinate);
-		if (coordinate != NULL)
-		{
-			CWV.SetValue(8 * m_configuration.GetValue(coordinate->GetCoordinate()) + m_configuration.GetValue(nextCoordinate));
-		}
-		else
-		{
-			CWV.SetValue(m_configuration.GetValue(nextCoordinate));
-		}
+		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -208,14 +169,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x - 1, y - 2);
 		CWV.SetCoordinate(nextCoordinate);
-		if (coordinate != NULL)
-		{
-			CWV.SetValue(8 * m_configuration.GetValue(coordinate->GetCoordinate()) + m_configuration.GetValue(nextCoordinate));
-		}
-		else
-		{
-			CWV.SetValue(m_configuration.GetValue(nextCoordinate));
-		}
+		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -223,17 +177,10 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x + 1, y - 2);
 		CWV.SetCoordinate(nextCoordinate);
-		if (coordinate != NULL)
-		{
-			CWV.SetValue(8 * m_configuration.GetValue(coordinate->GetCoordinate()) + m_configuration.GetValue(nextCoordinate));
-		}
-		else
-		{
-			CWV.SetValue(m_configuration.GetValue(nextCoordinate));
-		}
+		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
 		nextCoordinatesList.push_back(CWV);
 	}
-	nextCoordinatesList.sort([](CoordinateWithValue & a, CoordinateWithValue & b) { return a.GetValue() > b.GetValue(); });
+
 	return nextCoordinatesList;
 }
 
@@ -481,87 +428,87 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 //	return leastVisitedC;
 //}
 
-//Coordinate SortCoordinatesByValue(list<Coordinate>* nextSteps)
-//{
-//	int bestValue = 0;
-//	int leastVisited = 0;
-//	Coordinate coordinate; Coordinate leastVisitedC;
-//	list<CoordinateWithValue> coordinatesWithValue;
-//
-//	coordinate = *(nextSteps->begin());
-//
-//
-//	for (list<Coordinate>::iterator it1 = nextSteps->begin(); it1 != nextSteps->end(); it1++)
-//	{
-//		list<Coordinate> listCoo = it1->GetNextCoordinates();
-//
-//		int bestValue = 0;
-//		CoordinateWithValue newCoordinate;
-//		newCoordinate.SetCoordinate(*it1);
-//
-//		for (list<Coordinate>::iterator it2 = listCoo.begin(); it2 != listCoo.end(); it2++)
-//		{
-//
-//			int actualValue = 8 * m_configuration.GetValue(*it1) + m_configuration.GetValue(*it2);
-//			if (actualValue > bestValue)
-//			{
-//				//ak je value vacsia ako best, best nastavu na actual a nastavi aktualny X coordinate
-//				bestValue = actualValue;
-//				coordinate = (*it1);
-//				if (bestValue == 9)
-//				{
-//					m_visited[coordinate.GetX()][coordinate.GetY()]++;
-//					cout << coordinate.GetX();
-//					cout << ",";
-//					cout << coordinate.GetY() << endl;
-//					return coordinate;
-//				}
-//			}
-//
-//			/*int actualValue = 8 * m_configuration.GetValue(*it1) + m_configuration.GetValue(*it2);
-//
-//			if (actualValue > bestValue)
-//			{
-//			bestValue = actualValue;
-//			newCoordinate.SetValue(actualValue);
-//			}*/
-//		}
-//		coordinatesWithValue.push_back(newCoordinate);
-//	}
-//
-//	leastVisitedC = coordinate;
-//
-//	if (m_visited[coordinate.GetX()][coordinate.GetY()] != 0 && bestValue == 0)
-//	{
-//		leastVisited = m_visited[coordinate.GetX()][coordinate.GetY()];
-//
-//		for (list<Coordinate>::iterator it3 = nextSteps->begin(); it3 != nextSteps->end(); it3++)
-//		{
-//			if (m_visited[it3->GetX()][it3->GetY()] == 0)
-//			{
-//
-//				m_visited[coordinate.GetX()][coordinate.GetY()]++;
-//				coordinate = (*it3);
-//			}
-//			else
-//			{
-//				if (leastVisited > m_visited[it3->GetX()][it3->GetY()])
-//				{
-//					leastVisited = m_visited[it3->GetX()][it3->GetY()];
-//					leastVisitedC = *it3;
-//				}
-//			}
-//		}
-//
-//	}
-//	m_visited[leastVisitedC.GetX()][leastVisitedC.GetY()]++;
-//	cout << leastVisitedC.GetX() << "," << leastVisitedC.GetY() << endl;
-//	//return leastVisitedC;
-//	coordinatesWithValue.sort([](CoordinateWithValue & a, CoordinateWithValue & b) { return a.GetValue() > b.GetValue(); });
-//
-//	//return coordinatesWithValue;
-//	return leastVisitedC;
-//}
+Coordinate SortCoordinatesByValue(list<Coordinate>* nextSteps)
+{
+	int bestValue = 0;
+	int leastVisited = 0;
+	Coordinate coordinate; Coordinate leastVisitedC;
+	list<CoordinateWithValue> coordinatesWithValue;
+
+	coordinate = *(nextSteps->begin());
+
+
+	for (list<Coordinate>::iterator it1 = nextSteps->begin(); it1 != nextSteps->end(); it1++)
+	{
+		list<Coordinate> listCoo = it1->GetNextCoordinates();
+
+		int bestValue = 0;
+		CoordinateWithValue newCoordinate;
+		newCoordinate.SetCoordinate(*it1);
+
+		for (list<Coordinate>::iterator it2 = listCoo.begin(); it2 != listCoo.end(); it2++)
+		{
+
+			int actualValue = 8 * m_configuration.GetValue(*it1) + m_configuration.GetValue(*it2);
+			if (actualValue > bestValue)
+			{
+				//ak je value vacsia ako best, best nastavu na actual a nastavi aktualny X coordinate
+				bestValue = actualValue;
+				coordinate = (*it1);
+				if (bestValue == 9)
+				{
+					m_visited[coordinate.GetX()][coordinate.GetY()]++;
+					cout << coordinate.GetX();
+					cout << ",";
+					cout << coordinate.GetY() << endl;
+					return coordinate;
+				}
+			}
+
+			/*int actualValue = 8 * m_configuration.GetValue(*it1) + m_configuration.GetValue(*it2);
+
+			if (actualValue > bestValue)
+			{
+			bestValue = actualValue;
+			newCoordinate.SetValue(actualValue);
+			}*/
+		}
+		coordinatesWithValue.push_back(newCoordinate);
+	}
+
+	leastVisitedC = coordinate;
+
+	if (m_visited[coordinate.GetX()][coordinate.GetY()] != 0 && bestValue == 0)
+	{
+		leastVisited = m_visited[coordinate.GetX()][coordinate.GetY()];
+
+		for (list<Coordinate>::iterator it3 = nextSteps->begin(); it3 != nextSteps->end(); it3++)
+		{
+			if (m_visited[it3->GetX()][it3->GetY()] == 0)
+			{
+
+				m_visited[coordinate.GetX()][coordinate.GetY()]++;
+				coordinate = (*it3);
+			}
+			else
+			{
+				if (leastVisited > m_visited[it3->GetX()][it3->GetY()])
+				{
+					leastVisited = m_visited[it3->GetX()][it3->GetY()];
+					leastVisitedC = *it3;
+				}
+			}
+		}
+
+	}
+	m_visited[leastVisitedC.GetX()][leastVisitedC.GetY()]++;
+	cout << leastVisitedC.GetX() << "," << leastVisitedC.GetY() << endl;
+	//return leastVisitedC;
+	coordinatesWithValue.sort([](CoordinateWithValue & a, CoordinateWithValue & b) { return a.GetValue() > b.GetValue(); });
+
+	//return coordinatesWithValue;
+	return leastVisitedC;
+}
 
 Coordinate FindBestNextJump(list<CoordinateWithValue>* li)
 {
@@ -588,33 +535,27 @@ Coordinate RemoveChessPiece(list<Coordinate>* chessPieces)
 
 
 
-//Coordinate Jump(list<Coordinate>* chessPiecesLocation, list<Coordinate>* possibleSteps, list<CoordinateWithValue>* nextSteps, Coordinate* lastCoordinate)
-//{
-//	//possibleSteps.sort([](const Coordinate & a, const Coordinate & b) { return m_configuration.GetValue(a) > m_configuration.GetValue(b); });
-//
-//	//*nextSteps = SortCoordinatesByValue(possibleSteps);
-//	//Coordinate co = SortCoordinatesByValue(possibleSteps);
-//
-//	//Coordinate nextCoordinate = FindBestNextJump(nextSteps);	
-//	//m_configuration.SetHorseCoordinate(nextCoordinate);
-//	//	m_configuration.SetHorseCoordinate(nextSteps->front().GetCoordinate());
-//	//m_configuration.SetHorseCoordinate(co);
-//	//Coordinate co2 = RemoveChessPiece(chessPiecesLocation);
-//
-//	//if (lastCoordinate != NULL && lastCoordinate->IsEqual(nextSteps->front().GetCoordinate()))
-//	//{
-//	//	nextSteps->pop_front();
-//	//}
-//
-//	return co;
-//
-//	//return nextSteps->front().GetCoordinate();
-//}
-
-void SortCoordinates(list<CoordinateWithValue>* coordinates)
+Coordinate Jump(list<Coordinate>* chessPiecesLocation, list<Coordinate>* possibleSteps, list<CoordinateWithValue>* nextSteps, Coordinate* lastCoordinate)
 {
-	//for(list<CoordinateWithValue>::iterator)
-	coordinates->sort([](CoordinateWithValue & a, CoordinateWithValue & b) { return a.GetValue() < b.GetValue(); });
+	//possibleSteps.sort([](const Coordinate & a, const Coordinate & b) { return m_configuration.GetValue(a) > m_configuration.GetValue(b); });
+
+	//*nextSteps = SortCoordinatesByValue(possibleSteps);
+	Coordinate co = SortCoordinatesByValue(possibleSteps);
+
+	//Coordinate nextCoordinate = FindBestNextJump(nextSteps);	
+	//m_configuration.SetHorseCoordinate(nextCoordinate);
+	//	m_configuration.SetHorseCoordinate(nextSteps->front().GetCoordinate());
+	m_configuration.SetHorseCoordinate(co);
+	Coordinate co2 = RemoveChessPiece(chessPiecesLocation);
+
+	//if (lastCoordinate != NULL && lastCoordinate->IsEqual(nextSteps->front().GetCoordinate()))
+	//{
+	//	nextSteps->pop_front();
+	//}
+
+	return co;
+
+	//return nextSteps->front().GetCoordinate();
 }
 
 void FindBestWay()
@@ -622,116 +563,71 @@ void FindBestWay()
 	int i = 0;
 
 	list<CoordinateWithValue> actualSolution;
-	list<CoordinateWithValue> firstSteps = NextStep(NULL);
-	list<CoordinateWithValue> nextSteps = firstSteps;
+	list<CoordinateWithValue> nextSteps = NextStep(NULL);
 	list<CoordinateWithValue> listsss;
-	int leastVisited = 0;
-	Coordinate leastVisitedC;
-
-	CoordinateWithValue konik;
-	konik.SetCoordinate(m_configuration.GetHorseCoordinate());
-	Coordinate lastCoordinate;
-
-	for (list<CoordinateWithValue>::iterator it = nextSteps.begin(); it != nextSteps.end(); it++)
-	{
-		(*it).SetNextList(NextStep(&(*it)));
-	}
-
-	konik.SetNextList(nextSteps);
-	actualSolution.push_back(konik);
 	
 	do
 	{
 		int moveCoutner = 0;
 		list<Coordinate> chessPiecesPositions = m_configuration.GetChessPiecesCoordinates();
+		CoordinateWithValue konik;
+		konik.SetCoordinate(m_configuration.GetHorseCoordinate());
+		
+		//TODO: 
+		//pridat cyklus kde bude vyhladavat a vraciat dane cesty
+		//podmienka, 4i je horna mez/dolna mez a porovnat s existujucim najlepsim riesenim
+		Coordinate lastCoordinate;
+
+		konik.SetNextList(nextSteps);
+
+		actualSolution.push_back(konik);
 
 		while ((moveCoutner < m_upperLimit) && chessPiecesPositions.size() != 0)
 		{
 			moveCoutner++;
+			/*m_coordinatesWithValue = NextStep(NULL);
 
-			CoordinateWithValue nextPush = actualSolution.back().GetNextCoordinates().front();
+			for (list<CoordinateWithValue>::iterator it = m_coordinatesWithValue.begin(); it != m_coordinatesWithValue.end(); it++)
+			{
+				(*it).SetNextList(NextStep(&(*it).GetCoordinate()));
+			}
+			actualSolution.push_back(Jump(&chessPiecesPositions));*/
 
-
-			//nextSteps = NextStep(&(actualSolution.back().GetNextCoordinates().front()));
-			nextSteps = NextStep(&(nextPush));
+			
 
 			for (list<CoordinateWithValue>::iterator it = nextSteps.begin(); it != nextSteps.end(); it++)
 			{
 				(*it).SetNextList(NextStep(&(*it)));
 			}
-			//nextSteps.pop_front();
 			
-			nextSteps.pop_front();
-			nextPush.SetNextList(nextSteps);
-			//(&actualSolution.back())->SetNextList(nextSteps);
 
-			
-			actualSolution.push_back(nextPush);
-			//((&actualSolution.back()->GetNextCoordinates())).pop_front();
+			//toto treba podla sortu pushovat a nie ako kokot takto random, ale mozem ja jebat kto sa ma v tej sort funkcii vyznat
+			//tiez tam treba dat pointer/referenciu, toto neviem co spravi, pojebane c++
+
+			actualSolution.push_back(actualSolution.back().GetNextCoordinates().front());
 
 
-
-			/*list<CoordinateWithValue>::iterator vagina = (penis->GetNextCoordinates()).begin();
-			(*vagina).SetNextList(nextSteps);*/
-			//rit->SetNextList(nextSteps);
-
-			//actualSolution.push_back(nextSteps.front());
-			//nextSteps.pop_front();
-
-			/*if (m_visited[nextSteps.front().GetCoordinate().GetX()][nextSteps.front().GetCoordinate().GetY()] == 0)
-			{
-				actualSolution.push_back(nextSteps.front());
-				m_visited[nextSteps.front().GetCoordinate().GetX()][nextSteps.front().GetCoordinate().GetY()]++;
+			/*	if (moveCoutner == 1)
+				{
+					actualSolution.push_back(Jump(&chessPiecesPositions, &nextSteps, &listsss, NULL));
+				}
+				else
+				{
+					list<Coordinate>::iterator it = actualSolution.end();
+					it--;
+					if (actualSolution.size() > 1)
+					{
+						it--;
+					}
+					actualSolution.push_back(Jump(&chessPiecesPositions, &nextSteps, &listsss, &(*it)));
+				}
 			}
-			else
-			{
-				actualSolution.push_back(nextSteps.back());
-				m_visited[nextSteps.front().GetCoordinate().GetX()][nextSteps.front().GetCoordinate().GetY()]++;
-			}*/
-		}
 
-		actualSolution.pop_back();
-		actualSolution.pop_back();
+			m_bestSolution = actualSolution;
+			actualSolution.pop_back();*/
+		}
 	} while (actualSolution.size() != 0);
 }
-
-//void FindBestWay()
-//{
-//	int i = 0;
-//
-//	list<CoordinateWithValue> actualSolution;
-//	list<CoordinateWithValue> nextSteps = NextStep(NULL);
-//	list<CoordinateWithValue> listsss;
-//	CoordinateWithValue konik;
-//	konik.SetCoordinate(m_configuration.GetHorseCoordinate());
-//
-//	konik.SetNextList(nextSteps);
-//
-//	actualSolution.push_back(konik);
-//	
-//	while(actualSolution.size() != 0)
-//	{
-//		int moveCoutner = 0;
-//		list<Coordinate> chessPiecesPositions = m_configuration.GetChessPiecesCoordinates();
-//
-//		while ((moveCoutner < m_upperLimit) && chessPiecesPositions.size() != 0)
-//		{
-//			moveCoutner++;
-//
-//			for (list<CoordinateWithValue>::iterator it = nextSteps.begin(); it != nextSteps.end(); it++)
-//			{
-//				(*it).SetNextList(NextStep(&(*it)));
-//			}
-//			actualSolution.push_back(nextSteps.front());
-//			nextSteps = NextStep(&actualSolution.back());
-////			SortCoordinates(&(&(actualSolution.back()))->GetNextCoordinates());
-//
-//
-//		}
-//		//actualSolution.pop_back();
-//		//actualSolution.pop_back();
-//	}
-//}
 
 int main()
 {
