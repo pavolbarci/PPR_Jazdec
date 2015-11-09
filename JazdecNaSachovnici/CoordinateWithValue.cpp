@@ -17,9 +17,9 @@ void CoordinateWithValue::SetValue(int value)
 
 void CoordinateWithValue::SetNextList(list<CoordinateWithValue> coordinatesList)
 {
-	this->nextCoordinatesList = coordinatesList;
+	this->next = coordinatesList;
 }
 
 Coordinate CoordinateWithValue::GetCoordinate() { return this->coordinate; }
 int CoordinateWithValue::GetValue() { return this->value; }
-list<CoordinateWithValue> CoordinateWithValue::GetNextCoordinates() { return this->nextCoordinatesList; }
+list<CoordinateWithValue> CoordinateWithValue::GetNextCoordinates() { return this->next; }

@@ -10,7 +10,8 @@ class CoordinateWithValue {
 private:
 	int value;
 	Coordinate coordinate;
-	list<CoordinateWithValue> nextCoordinatesList;
+	list<CoordinateWithValue> next;
+
 public:
 	void SetCoordinate(Coordinate);
 	void SetValue(int);
