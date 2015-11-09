@@ -1,5 +1,8 @@
 #include "stdafx.h"
 #include "Coordinate.h"
+#include <list>
+
+using namespace std;
 
 //nastavi suradnice
 void Coordinate::SetCoordinate(int x, int y) {
@@ -19,6 +22,12 @@ bool Coordinate::IsEqual(Coordinate coordinate) {
 	}
 }
 
+void Coordinate::SetNextList(list<Coordinate> coordinatesList)
+{
+	this->nextCoordinatesList = coordinatesList;
+}
+
 //vrati x a y suradnicu
 int Coordinate::GetX() { return x; }
 int Coordinate::GetY() { return y; }
+list<Coordinate> Coordinate::GetNextCoordinates() { return this->nextCoordinatesList; }

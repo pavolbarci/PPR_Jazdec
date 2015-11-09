@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Configuration.h"
 #include "Coordinate.h"
+#include "CoordinateWithValue.h"
 #include <sstream>
 #include <fstream>
 
@@ -21,6 +22,29 @@ string Configuration::SetHorseCoordinate(Coordinate coordinate) {
 	this->horse = coordinate;
 
 	return "";
+}
+
+void Configuration::InicializeChessBoard()
+{
+	chessBoard = new CoordinateWithValue*[chessBoardSize];
+	for (int x = 0; x < chessBoardSize; x++)
+	{
+		chessBoard[x] = new CoordinateWithValue[chessBoardSize];
+		for (int y = 0; y < chessBoardSize; y++)
+		{
+			chessBoard[x][y].SetValue(0);
+		}
+	}
+
+	for each (Coordinate coordinate in chessPieces)
+	{ 
+		chessBoard[coordinate.GetX()][coordinate.GetY()].SetValue(1);
+	}
+}
+
+void Configuration::SetChessboardsCoordinateValue(Coordinate coordinate)
+{
+	this->chessBoard[coordinate.GetX()][coordinate.GetY()].SetValue(0);
 }
 
 //vstupom je riadok zo suboru, nastavi podla neho suradnicu a porovna vsetky existujuce suradnice
@@ -75,20 +99,26 @@ void Configuration::PrintConfigurationToFile()
 }
 
 //pokial sa na pozicii konika nachadza figurka, odstrani ju zo zoznamu figurok
-void Configuration::RemoveChessPiece()
-{
-	for (list<Coordinate>::iterator it = chessPieces.begin(); it != chessPieces.end(); it++)
-	{
-		if (it->IsEqual(horse))
-		{
-			chessPieces.erase(it);
-			break;
-		}
-	}
-}
+//void Configuration::RemoveChessPiece()
+//{
+//	for (list<Coordinate>::iterator it = chessPieces.begin(); it != chessPieces.end(); it++)
+//	{
+//		if (it->IsEqual(horse))
+//		{
+//			chessPieces.erase(it);
+//			break;
+//		}
+//	}
+//}
 
 //gettre na konfiguracne parametre
 int Configuration::GetChessBoardSize() { return this->chessBoardSize; }
 int Configuration::GetNumberOfChessPieces() { return this->numberOfChessPieces; }
 Coordinate Configuration::GetHorseCoordinate() { return this->horse; }
 list<Coordinate> Configuration::GetChessPiecesCoordinates() { return this->chessPieces; }
+CoordinateWithValue Configuration::GetCoordinationWithValue(int x, int y) { return this->chessBoard[x][y]; }
+
+
+
+
+int Configuration::GetValue(Coordinate coordinate) { return this->chessBoard[coordinate.GetX()][coordinate.GetY()].GetValue(); }
