@@ -13,8 +13,8 @@ private:
 	int chessBoardSize, numberOfChessPieces;
 	Coordinate horse;
 	list<Coordinate> chessPieces; //tu budu suradnice kde su panacikovia
-	CoordinateWithValue **chessBoard;
 public:
+	CoordinateWithValue **chessBoard;
 	void SetChessBoard(int, int);
 	void InicializeChessBoard();
 	string SetHorseCoordinate(Coordinate);

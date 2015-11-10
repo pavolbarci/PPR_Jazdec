@@ -13,6 +13,7 @@
 #include <vector>
 #include <algorithm>
 #include <deque>
+#include <iterator>
 
 using namespace std;
 
@@ -65,9 +66,22 @@ string InicializeConfiguration()
 	}
 
 	m_configuration.InicializeChessBoard();
+	m_chessBoard = new CoordinateWithValue*[m_configuration.GetChessBoardSize()];
+	for (int x = 0; x < m_configuration.GetChessBoardSize(); x++)
+	{
+		m_chessBoard[x] = new CoordinateWithValue[m_configuration.GetChessBoardSize()];
+		for (int y = 0; y < m_configuration.GetChessBoardSize(); y++)
+		{
+			m_chessBoard[x][y].SetValue(0);
+		}
+	}
+	for each (Coordinate coordinate in m_configuration.GetChessPiecesCoordinates())
+	{
+		m_chessBoard[coordinate.GetX()][coordinate.GetY()].SetValue(1);
+	}
 	m_lowerLimit = m_configuration.GetNumberOfChessPieces();
 	m_upperLimit = (m_configuration.GetChessBoardSize() * m_configuration.GetChessBoardSize()) - 1;
-	m_chessBoard = m_configuration.CopyChessboard();
+	//m_chessBoard = m_configuration.CopyChessboard();
 	return "";
 }
 
@@ -528,6 +542,7 @@ Coordinate RemoveChessPiece(list<Coordinate>* chessPieces, CoordinateWithValue h
 		if (it->IsEqual(horse.GetCoordinate()))
 		{
 			co = *it;
+
 			m_chessBoard[it->GetX()][it->GetY()].SetValue(0);
 			(*chessPieces).erase(it);
 			return co;
@@ -595,12 +610,16 @@ void UpdateDuplicates(list<CoordinateWithValue> nextSteps, CoordinateWithValue* 
 
 list<CoordinateWithValue> FindDuplicate(CoordinateWithValue* coordinate)
 {
+	list<CoordinateWithValue> newList;
 	for (list<CoordinateWithValue>::iterator it = actualSolution.end(); it != actualSolution.begin(); )
 	{
 		--it;
 		if ((*it).GetCoordinate().IsEqual((*coordinate).GetCoordinate()))
 		{
-			return it->GetNextCoordinates();
+			list<CoordinateWithValue> temp = it->GetNextCoordinates();
+			copy(temp.begin(), temp.end(), back_inserter(newList));
+			//newList = (*it).GetNextCoordinates();
+			return newList;
 		}
 	}
 
@@ -609,16 +628,29 @@ list<CoordinateWithValue> FindDuplicate(CoordinateWithValue* coordinate)
 
 void StepBack(list<Coordinate>* chessPiecesPositions)
 {
-	if (chessPiecesPositions->size() < m_configuration.GetNumberOfChessPieces())
+	if (actualSolution.size() != 0)
 	{
-		Coordinate previous = actualSolution.back().GetCoordinate();
-		if (m_configuration.WasThereChessPiece(previous) && m_chessBoard[previous.GetX()][previous.GetY()].visited == -1)
+		if (chessPiecesPositions->size() < m_configuration.GetNumberOfChessPieces())
 		{
-			chessPiecesPositions->push_back(previous);
-			m_chessBoard[previous.GetX()][previous.GetY()].SetValue(1);
+			Coordinate previous = actualSolution.back().GetCoordinate();
+			/*for (int i = 0; i < 10; i++)
+			{
+				for (int j = 0; j < 10; j++)
+					cout << m_chessBoard[i][j].visited;
+				cout << endl;
+			}*/
+
+			int temp = m_chessBoard[previous.GetX()][previous.GetY()].visited;
+			if (m_configuration.WasThereChessPiece(previous) && temp == (actualSolution.size()-1))
+			{
+				chessPiecesPositions->push_back(previous);
+				m_chessBoard[previous.GetX()][previous.GetY()].SetValue(1);
+				m_chessBoard[previous.GetX()][previous.GetY()].visited = 0;
+			}
 		}
+
+		actualSolution.pop_back();
 	}
-	actualSolution.pop_back();
 }
 
 void FindBestWay()
@@ -658,9 +690,15 @@ void FindBestWay()
 				StepBack(&chessPiecesPositions);
 				moveCounter--;
 			}
-			CoordinateWithValue newCoordinate = actualSolution.back().GetNextCoordinates().front();
-			m_chessBoard[newCoordinate.GetCoordinate().GetX()][newCoordinate.GetCoordinate().GetY()].visited--;
-			
+			CoordinateWithValue newCoordinate;
+			newCoordinate.SetCoordinate(actualSolution.back().GetNextCoordinates().front().GetCoordinate());
+			newCoordinate.SetValue(actualSolution.back().GetNextCoordinates().front().GetValue());
+			newCoordinate.SetNextList(actualSolution.back().GetNextCoordinates().front().GetNextCoordinates());
+
+			if (m_chessBoard[newCoordinate.GetCoordinate().GetX()][newCoordinate.GetCoordinate().GetY()].GetValue() == 1)
+			{
+				m_chessBoard[newCoordinate.GetCoordinate().GetX()][newCoordinate.GetCoordinate().GetY()].visited = moveCounter;
+			}
 			//nextSteps = (&newCoordinate)->GetNextCoordinates();
 			nextSteps = FindDuplicate(&newCoordinate);
 			UpdateDuplicates(nextSteps, &newCoordinate);
@@ -685,13 +723,13 @@ void FindBestWay()
 		}
 		int temp = chessPiecesPositions.size();
 		StepBack(&chessPiecesPositions);
-		StepBack(&chessPiecesPositions);
+		//StepBack(&chessPiecesPositions);
 		/*if (actualSolution.back().GetValue() < 8)
 		{
 			StepBack(&chessPiecesPositions);
 		}*/
 		cout << "Solution or way found with number of moves = " << minimalnaCena << "sd " << i++ << " bla " << temp << endl;
-		moveCounter -= 2;
+		moveCounter--;
 	} while (actualSolution.size() != 0);
 }
 

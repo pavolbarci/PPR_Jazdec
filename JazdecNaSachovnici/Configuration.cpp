@@ -121,12 +121,21 @@ int Configuration::GetValue(Coordinate coordinate) { return this->chessBoard[coo
 
 bool Configuration::WasThereChessPiece(Coordinate coordinate)
 {
-	for each (Coordinate var in this->chessPieces)
+	if (this->chessBoard[coordinate.GetX()][coordinate.GetY()].GetValue() == 1)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+
+	/*for each (Coordinate var in this->chessPieces)
 	{
 		if (var.IsEqual(coordinate))
 		{
 			return true;
 		}
 	}
-	return false;
+	return false;*/
 }
