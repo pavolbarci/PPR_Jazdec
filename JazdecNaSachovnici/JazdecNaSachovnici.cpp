@@ -580,6 +580,19 @@ list<CoordinateWithValue> actualSolution;
 //	}
 //}
 
+
+void UpdateDuplicates(list<CoordinateWithValue> nextSteps, CoordinateWithValue* coordinate)
+{
+	for (list<CoordinateWithValue>::iterator it = actualSolution.end(); it != actualSolution.begin(); )
+	{
+		--it;
+		if ((*it).GetCoordinate().IsEqual((*coordinate).GetCoordinate()))
+		{
+			it->SetNextList(nextSteps);
+		}
+	}
+}
+
 list<CoordinateWithValue> FindDuplicate(CoordinateWithValue* coordinate)
 {
 	for (list<CoordinateWithValue>::iterator it = actualSolution.end(); it != actualSolution.begin(); )
@@ -647,6 +660,7 @@ void FindBestWay()
 			
 			//nextSteps = (&newCoordinate)->GetNextCoordinates();
 			nextSteps = FindDuplicate(&newCoordinate);
+			UpdateDuplicates(nextSteps, &newCoordinate);
 			
 			for (list<CoordinateWithValue>::iterator it = nextSteps.begin(); it != nextSteps.end(); it++)
 			{
