@@ -42,11 +42,6 @@ void Configuration::InicializeChessBoard()
 	}
 }
 
-void Configuration::SetChessboardsCoordinateValue(Coordinate coordinate, int val)
-{
-	this->chessBoard[coordinate.GetX()][coordinate.GetY()].SetValue(val);
-}
-
 //vstupom je riadok zo suboru, nastavi podla neho suradnicu a porovna vsetky existujuce suradnice
 //ak sa rovnaju tak vyhodi string, inak vyhodi empty
 string Configuration::AddChessPieceLocation(string str) {
@@ -119,6 +114,7 @@ list<Coordinate> Configuration::GetChessPiecesCoordinates() { return this->chess
 CoordinateWithValue Configuration::GetCoordinationWithValue(int x, int y) { return this->chessBoard[x][y]; }
 
 
+CoordinateWithValue** Configuration::CopyChessboard() { return this->chessBoard; }
 
 
 int Configuration::GetValue(Coordinate coordinate) { return this->chessBoard[coordinate.GetX()][coordinate.GetY()].GetValue(); }

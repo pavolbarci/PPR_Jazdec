@@ -13,6 +13,7 @@ private:
 	list<CoordinateWithValue> next;
 
 public:
+	int visited = 0;
 	void SetCoordinate(Coordinate);
 	void SetValue(int);
 	void SetNextList(list<CoordinateWithValue>);

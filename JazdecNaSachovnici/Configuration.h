@@ -17,7 +17,6 @@ private:
 public:
 	void SetChessBoard(int, int);
 	void InicializeChessBoard();
-	void SetChessboardsCoordinateValue(Coordinate, int);
 	string SetHorseCoordinate(Coordinate);
 	string AddChessPieceLocation(string);
 	void PrintConfigurationToFile();
@@ -29,7 +28,7 @@ public:
 	CoordinateWithValue GetCoordinationWithValue(int, int);
 	list<Coordinate> GetChessPiecesCoordinates();
 	bool WasThereChessPiece(Coordinate);
-
+	CoordinateWithValue** CopyChessboard();
 
 	int GetValue(Coordinate);
 };

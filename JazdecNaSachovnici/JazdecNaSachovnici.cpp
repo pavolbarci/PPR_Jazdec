@@ -22,7 +22,8 @@ list<CoordinateWithValue> m_coordinatesWithValue;
 int m_lowerLimit;
 int m_upperLimit;
 list<Coordinate> m_bestSolution;
-int m_visited[100][100];
+CoordinateWithValue** m_chessBoard;
+list<CoordinateWithValue> actualSolution;
 
 //nastavi pociatocnu konfiguraciu zo suboru
 string InicializeConfiguration()
@@ -66,7 +67,7 @@ string InicializeConfiguration()
 	m_configuration.InicializeChessBoard();
 	m_lowerLimit = m_configuration.GetNumberOfChessPieces();
 	m_upperLimit = (m_configuration.GetChessBoardSize() * m_configuration.GetChessBoardSize()) - 1;
-
+	m_chessBoard = m_configuration.CopyChessboard();
 	return "";
 }
 
@@ -118,7 +119,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x + 2, y + 1);
 		CWV.SetCoordinate(nextCoordinate);
-		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
+		CWV.SetValue(m_chessBoard[nextCoordinate.GetX()][nextCoordinate.GetY()].GetValue());
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -126,7 +127,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x + 2, y - 1);
 		CWV.SetCoordinate(nextCoordinate);
-		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
+		CWV.SetValue(m_chessBoard[nextCoordinate.GetX()][nextCoordinate.GetY()].GetValue());
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -134,7 +135,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x - 2, y + 1);
 		CWV.SetCoordinate(nextCoordinate);
-		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
+		CWV.SetValue(m_chessBoard[nextCoordinate.GetX()][nextCoordinate.GetY()].GetValue());
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -142,7 +143,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x - 2, y - 1);
 		CWV.SetCoordinate(nextCoordinate);
-		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
+		CWV.SetValue(m_chessBoard[nextCoordinate.GetX()][nextCoordinate.GetY()].GetValue());
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -150,7 +151,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x + 1, y + 2);
 		CWV.SetCoordinate(nextCoordinate);
-		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
+		CWV.SetValue(m_chessBoard[nextCoordinate.GetX()][nextCoordinate.GetY()].GetValue());
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -158,7 +159,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x - 1, y + 2);
 		CWV.SetCoordinate(nextCoordinate);
-		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
+		CWV.SetValue(m_chessBoard[nextCoordinate.GetX()][nextCoordinate.GetY()].GetValue());
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -166,7 +167,7 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x - 1, y - 2);
 		CWV.SetCoordinate(nextCoordinate);
-		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
+		CWV.SetValue(m_chessBoard[nextCoordinate.GetX()][nextCoordinate.GetY()].GetValue());
 		nextCoordinatesList.push_back(CWV);
 	}
 
@@ -174,13 +175,13 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	{
 		nextCoordinate.SetCoordinate(x + 1, y - 2);
 		CWV.SetCoordinate(nextCoordinate);
-		CWV.SetValue(m_configuration.GetValue(nextCoordinate));
+		CWV.SetValue(m_chessBoard[nextCoordinate.GetX()][nextCoordinate.GetY()].GetValue());
 		nextCoordinatesList.push_back(CWV);
 	}
 	nextCoordinatesList.sort([](CoordinateWithValue & a, CoordinateWithValue & b) { return a.GetValue() > b.GetValue(); });
 	if (coordinate != NULL)
 	{
-		coordinate->SetValue(8 * m_configuration.GetValue(coordinate->GetCoordinate()) + nextCoordinatesList.front().GetValue());
+		coordinate->SetValue(8 * m_chessBoard[coordinate->GetCoordinate().GetX()][coordinate->GetCoordinate().GetY()].GetValue() + nextCoordinatesList.front().GetValue());
 	}
 
 	return nextCoordinatesList;
@@ -527,7 +528,7 @@ Coordinate RemoveChessPiece(list<Coordinate>* chessPieces, CoordinateWithValue h
 		if (it->IsEqual(horse.GetCoordinate()))
 		{
 			co = *it;
-			m_configuration.SetChessboardsCoordinateValue(*it, 0);
+			m_chessBoard[it->GetX()][it->GetY()].SetValue(0);
 			(*chessPieces).erase(it);
 			return co;
 		}
@@ -566,7 +567,6 @@ void SortCoordinates(list<CoordinateWithValue>* coordinates)
 	coordinates->sort([](CoordinateWithValue & a, CoordinateWithValue & b) { return a.GetValue() < b.GetValue(); });
 }
 
-list<CoordinateWithValue> actualSolution;
 
 //void RemoveFromStack()
 //{
@@ -609,11 +609,14 @@ list<CoordinateWithValue> FindDuplicate(CoordinateWithValue* coordinate)
 
 void StepBack(list<Coordinate>* chessPiecesPositions)
 {
-	Coordinate previous = actualSolution.back().GetCoordinate();
-	if (m_configuration.WasThereChessPiece(previous))
+	if (chessPiecesPositions->size() < m_configuration.GetNumberOfChessPieces())
 	{
-		chessPiecesPositions->push_back(previous);
-		m_configuration.SetChessboardsCoordinateValue(previous, 1);
+		Coordinate previous = actualSolution.back().GetCoordinate();
+		if (m_configuration.WasThereChessPiece(previous) && m_chessBoard[previous.GetX()][previous.GetY()].visited == -1)
+		{
+			chessPiecesPositions->push_back(previous);
+			m_chessBoard[previous.GetX()][previous.GetY()].SetValue(1);
+		}
 	}
 	actualSolution.pop_back();
 }
@@ -656,7 +659,7 @@ void FindBestWay()
 				moveCounter--;
 			}
 			CoordinateWithValue newCoordinate = actualSolution.back().GetNextCoordinates().front();
-			
+			m_chessBoard[newCoordinate.GetCoordinate().GetX()][newCoordinate.GetCoordinate().GetY()].visited--;
 			
 			//nextSteps = (&newCoordinate)->GetNextCoordinates();
 			nextSteps = FindDuplicate(&newCoordinate);
@@ -676,10 +679,18 @@ void FindBestWay()
 			actualSolution.push_back(newCoordinate);	
 			RemoveChessPiece(&chessPiecesPositions, actualSolution.back());
 		}
-		minimalnaCena = moveCounter;
+		if (chessPiecesPositions.size() == 0)
+		{
+			minimalnaCena = moveCounter;
+		}
+		int temp = chessPiecesPositions.size();
 		StepBack(&chessPiecesPositions);
-		//StepBack(&chessPiecesPositions);
-		cout << "Solution or way found with number of moves = " << minimalnaCena << endl;
+		StepBack(&chessPiecesPositions);
+		/*if (actualSolution.back().GetValue() < 8)
+		{
+			StepBack(&chessPiecesPositions);
+		}*/
+		cout << "Solution or way found with number of moves = " << minimalnaCena << "sd " << i++ << " bla " << temp << endl;
 		moveCounter -= 2;
 	} while (actualSolution.size() != 0);
 }
