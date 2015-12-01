@@ -663,7 +663,7 @@ void StepBack(list<Coordinate>* chessPiecesPositions)
 
 void FindBestWay()
 {
-	int i = 0;
+		int i = 0;
 
 	list<CoordinateWithValue> firstSteps = NextStep(NULL);
 	list<CoordinateWithValue> nextSteps = firstSteps;
@@ -712,6 +712,7 @@ void FindBestWay()
 				break;
 			}
 			CoordinateWithValue newCoordinate = actualSolution.back().GetNextCoordinates().front();
+			
 			list<CoordinateWithValue> temp = actualSolution.back().GetNextCoordinates();
 			if (m_chessBoard[newCoordinate.GetCoordinate().GetX()][newCoordinate.GetCoordinate().GetY()].visited == 1)
 			{
@@ -740,6 +741,7 @@ void FindBestWay()
 			nextSteps = FindDuplicate(&newCoordinate);
 			//UpdateDuplicates(nextSteps, &newCoordinate);
 			
+
 			for (list<CoordinateWithValue>::iterator it = nextSteps.begin(); it != nextSteps.end(); it++)
 			{
 				(*it).SetNextList(NextStep(&(*it)));
@@ -857,9 +859,6 @@ int main()
 
 
 
-/*list<CoordinateWithValue>::iterator vagina = (penis->GetNextCoordinates()).begin();
-(*vagina).SetNextList(nextSteps);*/
-//rit->SetNextList(nextSteps);
 
 //actualSolution.push_back(nextSteps.front());
 //nextSteps.pop_front();
