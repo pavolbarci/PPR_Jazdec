@@ -10,19 +10,27 @@
 #include <algorithm>
 #include <deque>
 #include <iterator>
+#include <mpi.h>
+
+#define LENGTH 10000
+#define CHECK_MSG_AMOUNT 100
+#define MSG_WORK_REQUEST 1000
+#define MSG_WORK_SENT    1001
+#define MSG_WORK_NOWORK  1002
+#define MSG_TOKEN        1003
+#define MSG_FINISH       1004
 
 using namespace std;
+
+#pragma region
 class Coordinate {
 private:
 	int x, y;
-	list<Coordinate> nextCoordinatesList;
 public:
 	void SetCoordinate(int, int);
 	bool IsEqual(Coordinate);
 	int GetX();
 	int GetY();
-	void SetNextList(list<Coordinate>);
-	list<Coordinate> GetNextCoordinates();
 };
 
 //nastavi suradnice
@@ -43,15 +51,10 @@ bool Coordinate::IsEqual(Coordinate coordinate) {
 	}
 }
 
-void Coordinate::SetNextList(list<Coordinate> coordinatesList)
-{
-	this->nextCoordinatesList = coordinatesList;
-}
 
 //vrati x a y suradnicu
 int Coordinate::GetX() { return x; }
 int Coordinate::GetY() { return y; }
-list<Coordinate> Coordinate::GetNextCoordinates() { return this->nextCoordinatesList; }
 
 class CoordinateWithValue {
 private:
@@ -225,24 +228,9 @@ bool Configuration::WasThereChessPiece(Coordinate coordinate)
 		return false;
 	}
 }
+#pragma endregion Classes
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//globalna premenna konfiguracie (modelu)
+#pragma region
 Configuration m_configuration;
 list<CoordinateWithValue> m_coordinatesWithValue;
 int m_lowerLimit;
@@ -250,7 +238,11 @@ int m_upperLimit;
 list<CoordinateWithValue> m_bestSolution;
 CoordinateWithValue** m_chessBoard;
 list<CoordinateWithValue> actualSolution;
+int MY_RANK;
+int PROCESSORS;
+#pragma endregion Parameters
 
+#pragma region
 //nastavi pociatocnu konfiguraciu zo suboru
 string InicializeConfiguration()
 {
@@ -409,16 +401,10 @@ list<CoordinateWithValue> NextStep(CoordinateWithValue* coordinate)
 	return nextCoordinatesList;
 }
 
-Coordinate FindBestNextJump(list<CoordinateWithValue>* li)
-{
-	Coordinate co;
-	return co;
-}
-
 Coordinate RemoveChessPiece(list<Coordinate>* chessPieces, CoordinateWithValue horse)
 {
 	Coordinate co;
-
+	co.SetCoordinate(0, 0);
 	for (list<Coordinate>::iterator it = (*chessPieces).begin(); it != (*chessPieces).end(); it++)
 	{
 		if (it->IsEqual(horse.GetCoordinate()))
@@ -487,120 +473,719 @@ void StepBack(list<Coordinate>* chessPiecesPositions)
 		actualSolution.pop_back();
 	}
 }
+#pragma endregion Methods
 
-void FindBestWay()
+string PackActualSolution(list<CoordinateWithValue>* sendSolution)
 {
-	int i = 0;
+	ostringstream oss;
+
+	for (auto coordinate : *sendSolution)
+	{
+		oss << coordinate.GetCoordinate().GetX() << "," << coordinate.GetCoordinate().GetY() << "-";
+
+		for (auto next : coordinate.GetNextCoordinates())
+		{
+			oss << next.GetCoordinate().GetX() << "," << next.GetCoordinate().GetY() << "," << next.GetValue() << "/";
+
+			for (auto nextNext : next.GetNextCoordinates())
+			{
+				oss << nextNext.GetCoordinate().GetX() << "," << nextNext.GetCoordinate().GetY() << "," << nextNext.GetValue() << ";";
+			};
+
+			oss << "*";
+		};
+
+		oss << "|";
+	};
+
+	return oss.str();
+}
+
+vector<string> split(const string &s, char delim) {
+	stringstream ss(s);
+	string item;
+	vector<string> tokens;
+	while (getline(ss, item, delim)) {
+		tokens.push_back(item);
+	}
+	return tokens;
+}
+
+void SetCoor(Coordinate* coordinate, string indexes)
+{
+	coordinate->SetCoordinate(atoi((indexes.substr(0, 1).c_str())), atoi((indexes.substr(2, 1).c_str())));
+}
+
+list<CoordinateWithValue> UnpackActualSolution(string packedString)
+{
+	vector<string> steps = split(packedString, '|');
+
+	list<CoordinateWithValue> actual;
+
+
+	for (auto step : steps)
+	{
+		list<CoordinateWithValue> nextList;
+		list<CoordinateWithValue> nextNextList;
+
+		vector<string> ACTNEXT = split(step, '-');
+		CoordinateWithValue coor;
+		Coordinate coo;
+
+		SetCoor(&coo, ACTNEXT[0]);
+		coor.SetCoordinate(coo);
+
+		if (ACTNEXT.size() > 1)
+		{
+			vector<string> nextSteps = split(ACTNEXT[1], '*');
+
+
+			for (auto next : nextSteps)
+			{
+				vector<string> temp = split(next, '/');
+
+
+				CoordinateWithValue nextCoor;
+				Coordinate nextCoo;
+
+				SetCoor(&nextCoo, temp[0]);
+				nextCoor.SetCoordinate(nextCoo);
+				nextCoor.SetValue(atoi((temp[0].substr(4, 1).c_str())));
+
+				vector<string> nextNextSteps = split(temp[1], ';');
+				for (auto nextNext : nextNextSteps)
+				{
+					CoordinateWithValue nextNextCoor;
+					Coordinate nextNextCoo;
+
+					SetCoor(&nextNextCoo, nextNext);
+					nextNextCoor.SetValue(atoi((nextNext.substr(4, 1).c_str())));
+					nextNextCoor.SetCoordinate(nextNextCoo);
+
+					nextNextList.push_back(nextNextCoor);
+				};
+				nextCoor.SetNextList(nextNextList);
+				nextNextList.clear();
+				nextList.push_back(nextCoor);
+			};
+
+			coor.SetNextList(nextList);
+			nextList.clear();
+
+		}
+
+		actual.push_back(coor);
+	};
+
+	return actual;
+}
+
+int len;
+
+void SendActualSolution(int processNumber)
+{
+	//copy of actual solution
+	list<CoordinateWithValue> send = actualSolution;
+	//temp obsahuje vsetky mozne skoky a teda sa bude delit
+	list<CoordinateWithValue> temp = actualSolution.back().GetNextCoordinates();
+	int size = temp.size();
+
+	//list ktory bude novy pre send.back.next
+	list<CoordinateWithValue> sendNext;
+
+
+	for (int i = 0; i < size / 2; i++)
+	{
+		//do noveho listu pridame prvy zo vsetkych a zo vsetkych prvy odstranime
+		sendNext.push_back(temp.front());
+		temp.pop_front();
+	}
+
+	//na posielaci solution nastavime novy list a na stary zvysok
+	send.back().SetNextList(sendNext);
+	actualSolution.back().SetNextList(temp);
+
+
+	string sendMessage = PackActualSolution(&send);
+
+	char message[10000];
+	strcpy(message, sendMessage.c_str());
+	MPI_Request request;
+	MPI_Isend(message, strlen(message) + 1, MPI_CHAR, processNumber, MSG_WORK_SENT, MPI_COMM_WORLD, &request);
+}
+
+void CheckForMessage()
+{
+	int flag;
+	MPI_Status status;
+	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &status);
+	char message[LENGTH];
+
+	if (flag)
+	{
+		//prisla zprava, je treba ji obslouzit
+		//v promenne status je tag (status.MPI_TAG), cislo odesilatele (status.MPI_SOURCE)
+		//a pripadne cislo chyby (status.MPI_ERROR)
+		if (status.MPI_TAG == MSG_WORK_REQUEST)
+		{ // zadost o praci, prijmout a dopovedet
+		  // zaslat rozdeleny zasobnik a nebo odmitnuti MSG_WORK_NOWORK
+
+		}
+		else if (status.MPI_TAG == MSG_WORK_SENT)
+		{
+			// prisel rozdeleny zasobnik, prijmout
+			// deserializovat a spustit vypocet
+			MPI_Recv(message, LENGTH, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			string packedActual(message);
+			UnpackActualSolution(packedActual);
+			cout << "process two has received and unpacked solution" << endl;
+		}
+		else if (status.MPI_TAG == MSG_WORK_NOWORK)
+		{// odmitnuti zadosti o praci
+							  // zkusit jiny proces
+							  // a nebo se prepnout do pasivniho stavu a cekat na token
+
+		}
+		else if (status.MPI_TAG == MSG_TOKEN)
+		{//ukoncovaci token, prijmout a nasledne preposlat
+						// - bily nebo cerny v zavislosti na stavu procesu
+
+		}
+		else if (status.MPI_TAG == MSG_FINISH)
+		{
+			//konec vypoctu - proces 0 pomoci tokenu zjistil, ze jiz nikdo nema praci
+			//a rozeslal zpravu ukoncujici vypocet
+			//mam-li reseni, odeslu procesu 0
+			//nasledne ukoncim spoji cinnost
+			//jestlize se meri cas, nezapomen zavolat koncovou barieru MPI_Barrier (MPI_COMM_WORLD)
+		}
+		else
+		{
+
+			//chyba("neznamy typ zpravy"); 
+		}
+	}
+
+}
+
+void DoStep(list<Coordinate> *chessPiecesPositions, int* moveCounter)
+{
+	int minimalnaCena = m_upperLimit;
+	list<CoordinateWithValue> nextSteps;
+
+
+	(*moveCounter)++;
+
+	while (actualSolution.size() > 0 && actualSolution.back().GetNextCoordinates().size() == 0)
+	{
+		StepBack(chessPiecesPositions);
+		(*moveCounter)--;
+	}
+	if (actualSolution.size() == 0)
+	{
+		return;
+	}
+
+
+	CoordinateWithValue newCoordinate = actualSolution.back().GetNextCoordinates().front();
+
+	list<CoordinateWithValue> temp = actualSolution.back().GetNextCoordinates();
+	if (m_chessBoard[newCoordinate.GetCoordinate().GetX()][newCoordinate.GetCoordinate().GetY()].visited == 1)
+	{
+		for (list<CoordinateWithValue>::iterator it = temp.begin(); it != temp.end(); it++)
+		{
+			int temp = m_chessBoard[(*it).GetCoordinate().GetX()][(*it).GetCoordinate().GetY()].visited;
+			if (temp == 0)
+			{
+				newCoordinate = *it;
+				break;
+			}
+		};
+	}
+
+	m_chessBoard[newCoordinate.GetCoordinate().GetX()][newCoordinate.GetCoordinate().GetY()].visited = 1;
+
+	nextSteps = (&newCoordinate)->GetNextCoordinates();
+	nextSteps = FindDuplicate(&newCoordinate);
+
+
+	for (list<CoordinateWithValue>::iterator it = nextSteps.begin(); it != nextSteps.end(); it++)
+	{
+		(*it).SetNextList(NextStep(&(*it)));
+	};
+
+	newCoordinate.SetNextList(nextSteps);
+	CoordinateWithValue *lastItem = &(actualSolution.back());
+	list<CoordinateWithValue> lastItems = lastItem->GetNextCoordinates();
+
+	lastItems.pop_front();
+	lastItem->SetNextList(lastItems);
+	actualSolution.push_back(newCoordinate);
+	RemoveChessPiece(chessPiecesPositions, actualSolution.back());
+
+}
+
+list<Coordinate> FirstStep()
+{
 
 	list<CoordinateWithValue> firstSteps = NextStep(NULL);
 	list<CoordinateWithValue> nextSteps = firstSteps;
-	list<CoordinateWithValue> listsss;
-	int leastVisited = 0;
-	Coordinate leastVisitedC;
 
 	CoordinateWithValue konik;
 	konik.SetCoordinate(m_configuration.GetHorseCoordinate());
-	Coordinate lastCoordinate;
 
 	for (list<CoordinateWithValue>::iterator it = nextSteps.begin(); it != nextSteps.end(); it++)
 	{
 		(*it).SetNextList(NextStep(&(*it)));
 	};
 	nextSteps.sort([](CoordinateWithValue & a, CoordinateWithValue & b) { return a.GetValue() > b.GetValue(); });
-	int minimalnaCena = m_upperLimit;
+
 	konik.SetNextList(nextSteps);
-	bool first = true;
 	actualSolution.push_back(konik);
 	m_chessBoard[konik.GetCoordinate().GetX()][konik.GetCoordinate().GetY()].visited = 1;
 
 	list<Coordinate> chessPiecesPositions = m_configuration.GetChessPiecesCoordinates();
-	int moveCounter = 0;
-	do
-	{
-		int x = minimalnaCena - actualSolution.size();
-		int chessPieces = chessPiecesPositions.size();
-		if (x > 2)
-		{
-			x = 0;
-			chessPieces = 5;
-		}
-		while (((moveCounter < minimalnaCena) && chessPiecesPositions.size() != 0)
-			&& ((x + 2) < chessPieces))
-		{
-			moveCounter++;
 
-			while (actualSolution.size() > 0 && actualSolution.back().GetNextCoordinates().size() == 0)
-			{
-				StepBack(&chessPiecesPositions);
-				moveCounter--;
-			}
-			if (actualSolution.size() == 0)
-			{
-				break;
-			}
-			CoordinateWithValue newCoordinate = actualSolution.back().GetNextCoordinates().front();
-
-			list<CoordinateWithValue> temp = actualSolution.back().GetNextCoordinates();
-			if (m_chessBoard[newCoordinate.GetCoordinate().GetX()][newCoordinate.GetCoordinate().GetY()].visited == 1)
-			{
-				for (list<CoordinateWithValue>::iterator it = temp.begin(); it != temp.end(); it++)
-				{
-					int temp = m_chessBoard[(*it).GetCoordinate().GetX()][(*it).GetCoordinate().GetY()].visited;
-					if (temp == 0)
-					{
-						newCoordinate = *it;
-						break;
-					}
-				};
-			}
-
-			m_chessBoard[newCoordinate.GetCoordinate().GetX()][newCoordinate.GetCoordinate().GetY()].visited = 1;
-
-			nextSteps = (&newCoordinate)->GetNextCoordinates();
-			nextSteps = FindDuplicate(&newCoordinate);
-
-
-			for (list<CoordinateWithValue>::iterator it = nextSteps.begin(); it != nextSteps.end(); it++)
-			{
-				(*it).SetNextList(NextStep(&(*it)));
-			};
-
-			newCoordinate.SetNextList(nextSteps);
-			CoordinateWithValue *lastItem = &(actualSolution.back());
-			list<CoordinateWithValue> lastItems = lastItem->GetNextCoordinates();
-
-			lastItems.pop_front();
-			lastItem->SetNextList(lastItems);
-			actualSolution.push_back(newCoordinate);
-			RemoveChessPiece(&chessPiecesPositions, actualSolution.back());
-		}
-		if (chessPiecesPositions.size() == 0 && moveCounter < minimalnaCena)
-		{
-			minimalnaCena = moveCounter;
-			m_bestSolution = actualSolution;
-		}
-		int temp = chessPiecesPositions.size();
-		StepBack(&chessPiecesPositions);
-		cout << "cena " << minimalnaCena << " moves " << moveCounter << " id " << i++ << " chesspieces " << temp << endl;
-		moveCounter--;
-	} while (actualSolution.size() != 0);
+	return chessPiecesPositions;
 }
 
-int main()
+list<Coordinate> GetChessPieces()
+{
+	list<Coordinate> chessPiecesPositions = m_configuration.GetChessPiecesCoordinates();
+
+	for (auto coor : actualSolution)
+	{
+
+		m_chessBoard[coor.GetCoordinate().GetX()][coor.GetCoordinate().GetY()].visited = 1;
+		if (coor.GetCoordinate().IsEqual(chessPiecesPositions.front()))
+		{
+			m_chessBoard[coor.GetCoordinate().GetX()][coor.GetCoordinate().GetY()].SetValue(0);
+			chessPiecesPositions.pop_front();
+		}
+	};
+
+	return chessPiecesPositions;
+}
+
+int blabla = 0;
+void ExpandSolution(list<Coordinate> *chessPiecesPositions, int* moveCounter, int* minimalnaCena)
+{
+	int x = (*minimalnaCena) - actualSolution.size();
+	int chessPieces = (*chessPiecesPositions).size();
+	if (x > 2)
+	{
+		x = 0;
+		chessPieces = 5;
+	}
+	while ((((*moveCounter) < (*minimalnaCena)) && (*chessPiecesPositions).size() != 0)
+		&& ((x + 2) < chessPieces))
+	{
+		MPI_Bcast(minimalnaCena, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		if (actualSolution.size() > (*minimalnaCena))
+		{
+			int actSize = actualSolution.size();
+			for (int i = 0; i <= (actSize - (*minimalnaCena)); i++)
+			{
+				(*moveCounter)--;
+				StepBack(chessPiecesPositions);
+				if (m_bestSolution.size() > (*minimalnaCena))
+				{
+					m_bestSolution.pop_back();
+				}
+			}
+		}
+
+		DoStep(chessPiecesPositions, moveCounter);
+	}
+
+	if ((*chessPiecesPositions).size() == 0 && (*moveCounter) < (*minimalnaCena))
+	{
+		MPI_Bcast(minimalnaCena, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		(*minimalnaCena) = (*moveCounter);
+		m_bestSolution = actualSolution;
+		cout << "process " << MY_RANK << " found solution" << endl;
+
+		MPI_Request request;
+		if ((*minimalnaCena) == m_configuration.GetNumberOfChessPieces())
+		{
+			for (int i = 0; i < PROCESSORS; i++)
+			{
+				//if (i != MY_RANK)
+				{
+					MPI_Isend(minimalnaCena, 1, MPI_INT, i, MSG_FINISH, MPI_COMM_WORLD, &request);
+				}
+			}
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+	}
+	//cout << "cyklus " << blabla << endl;
+	blabla++;
+	StepBack(chessPiecesPositions);
+	(*moveCounter)--;
+}
+
+void SendFirstSolution(int processNumber)
+{
+	//copy of actual solution
+	list<CoordinateWithValue> send1 = actualSolution;
+	list<CoordinateWithValue> send2 = actualSolution;
+	list<CoordinateWithValue> send3 = actualSolution;
+	//temp obsahuje vsetky mozne skoky a teda sa bude delit
+	list<CoordinateWithValue> temp = actualSolution.back().GetNextCoordinates();
+	int size = temp.size();
+
+	//list ktory bude novy pre send.back.next
+	list<CoordinateWithValue> sendNext1;
+	list<CoordinateWithValue> sendNext2;
+	list<CoordinateWithValue> sendNext3;
+
+	sendNext1.push_back(temp.front());
+	temp.pop_front();
+	sendNext2.push_back(temp.front());
+	temp.pop_front();
+	sendNext3.push_back(temp.front());
+	temp.pop_front();
+
+	for (int i = 0; i < size; i++)
+	{
+		//do noveho listu pridame prvy zo vsetkych a zo vsetkych prvy odstranime
+	}
+
+	//na posielaci solution nastavime novy list a na stary zvysok
+	send1.back().SetNextList(sendNext1);
+	send2.back().SetNextList(sendNext2);
+	send3.back().SetNextList(sendNext3);
+	actualSolution.back().SetNextList(temp);
+
+
+	string sendMessage = PackActualSolution(&send1);
+
+	char message[10000];
+	strcpy(message, sendMessage.c_str());
+	MPI_Request request;
+	MPI_Isend(message, strlen(message) + 1, MPI_CHAR, 1, MSG_WORK_SENT, MPI_COMM_WORLD, &request);
+
+	sendMessage = PackActualSolution(&send2);
+
+	char message1[10000];
+	strcpy(message1, sendMessage.c_str());
+	MPI_Isend(message1, strlen(message1) + 1, MPI_CHAR, 2, MSG_WORK_SENT, MPI_COMM_WORLD, &request);
+
+	sendMessage = PackActualSolution(&send3);
+
+	char message2[10000];
+	strcpy(message2, sendMessage.c_str());
+	MPI_Isend(message2, strlen(message2) + 1, MPI_CHAR, 3, MSG_WORK_SENT, MPI_COMM_WORLD, &request);
+}
+
+#include <chrono>
+#include <thread>
+
+int main(int argc, char **argv)
 {
 	string errorMessage = InicializeConfiguration();
 
-	if (errorMessage.empty())
+	if (!errorMessage.empty())
 	{
-		m_configuration.PrintConfigurationToFile();
-	}
-	else
-	{
-		cout << errorMessage << endl;
+		return 0;
 	}
 
-	FindBestWay();
+	int minimalnaCena = m_upperLimit;
+	int flag;
+	MPI_Status status;
+	int dest;
+	int tag = 1;
+	int source;
+	char message[1000];
+	int m = 100;
 
-	printf("schluss");
+	int token = 1;
+
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &MY_RANK);
+	MPI_Comm_size(MPI_COMM_WORLD, &PROCESSORS);
+
+
+	int moveCounter = 0;
+	int citac = 0;
+	list<Coordinate> chessPiecesPositions;
+	double t1, t2;
+	t1 = MPI_Wtime();
+
+	if (MY_RANK == 0) {
+
+		moveCounter = 0;
+		citac = 0;
+		MPI_Request request;
+		chessPiecesPositions = FirstStep();
+		SendFirstSolution(1);
+		cout << "sent first work" << endl;
+		//SendActualSolution(1);
+		int noWorkCounter = 0;
+		int noWork = 0;
+		int workReq = 1;
+		while (actualSolution.size() != 0 || noWork)
+		{
+			citac++;
+			if ((citac % CHECK_MSG_AMOUNT) == 0)
+			{
+				int flag;
+				MPI_Status status;
+				MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &status);
+				char message[LENGTH];
+
+				if (flag)
+				{
+					if (status.MPI_TAG == MSG_WORK_REQUEST)
+					{
+						noWorkCounter = 0;
+						int source;
+						MPI_Recv(&source, LENGTH, MPI_INT, status.MPI_SOURCE, MSG_WORK_REQUEST, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+						cout << "no work from process " << source << endl;
+						if (actualSolution.back().GetNextCoordinates().size() < 2)
+						{
+							MPI_Isend(&noWork, 1, MPI_INT, source, MSG_WORK_NOWORK, MPI_COMM_WORLD, &request);
+							cout << "process 0 sent no work" << endl;
+						}
+						else
+						{
+							SendActualSolution(source);
+							cout << "process 0 sent work to" << status.MPI_SOURCE << endl;
+						}
+					}
+					else if (status.MPI_TAG == MSG_WORK_SENT)
+					{
+						MPI_Recv(message, LENGTH, MPI_CHAR, workReq, MSG_WORK_SENT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+						cout << "process 0 accepted work" << endl;
+						noWork = 0;
+						string packedActual(message);
+						actualSolution = UnpackActualSolution(packedActual);
+
+						chessPiecesPositions = GetChessPieces();
+						moveCounter = actualSolution.size();
+					}
+					else if (status.MPI_TAG == MSG_WORK_NOWORK)
+					{
+						if (noWorkCounter == (PROCESSORS - 1))
+						{
+
+							noWorkCounter = 0;
+							cout << " sleeping " << endl;
+							this_thread::sleep_for(chrono::milliseconds(100));
+							MPI_Send(&MY_RANK, 1, MPI_INT, 1, MSG_WORK_REQUEST, MPI_COMM_WORLD);
+
+							//token = 1;
+							//cout << " sleeping " << endl;
+							//this_thread::sleep_for(chrono::milliseconds(100));
+							//cout << "aftersleep " << MY_RANK << " sent token;" << endl;
+
+
+
+//							MPI_Isend(&token, 1, MPI_INT, 1, MSG_TOKEN, MPI_COMM_WORLD, &request);
+							//cout << "aftersleep " << MY_RANK << " sent token;" << endl;
+
+							/*t2 = MPI_Wtime();
+							printf("%d: Elapsed time is %f.\n", MY_RANK, t2 - t1);
+							MPI_Finalize();
+							exit(0);*/
+						}
+						else
+						{
+							noWorkCounter++;
+							cout << "process 0 no work" << endl;
+							workReq = status.MPI_SOURCE + 1;
+							if (workReq >= PROCESSORS)
+							{
+								workReq = 1;
+							}
+
+							MPI_Send(&MY_RANK, 1, MPI_INT, workReq, MSG_WORK_REQUEST, MPI_COMM_WORLD);
+						}
+					}
+					else if (status.MPI_TAG == MSG_TOKEN)
+					{
+						MPI_Recv(&token, 1, MPI_INT, MPI_ANY_SOURCE, MSG_TOKEN, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+						cout << "process " << MY_RANK << " receive token;" << endl;
+
+						if (token == 0)
+						{
+							if (actualSolution.size() == 0)
+							{
+								token = 1;
+							}
+							else
+							{
+								token = 0;
+							}
+							MPI_Isend(&token, 1, MPI_INT, 1, MSG_TOKEN, MPI_COMM_WORLD, &request);
+							cout << "process " << MY_RANK << " sent token from token;" << endl;
+						}
+						else if (token == 1)
+						{
+							cout << "process " << MY_RANK << " finish work;" << endl;
+							for (int i = 0; i < PROCESSORS; i++)
+							{
+								MPI_Isend(&minimalnaCena, 1, MPI_INT, i, MSG_FINISH, MPI_COMM_WORLD, &request);
+
+							}
+						}
+						else
+						{
+						}
+					}
+					else if (status.MPI_TAG == MSG_FINISH)
+					{
+						MPI_Barrier(MPI_COMM_WORLD);
+						t2 = MPI_Wtime();
+						printf("%d: Elapsed time is %f.\n", MY_RANK, t2 - t1);
+						MPI_Finalize();
+						exit(0);
+					}
+					else
+					{
+						//chyba("neznamy typ zpravy"); 
+					}
+
+				}
+			}
+			ExpandSolution(&chessPiecesPositions, &moveCounter, &minimalnaCena);
+		}
+	}
+	else {
+		moveCounter = 0;
+		citac = 0;
+		//SendActualSolution();
+		MPI_Recv(message, LENGTH, MPI_CHAR, 0, MSG_WORK_SENT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		string packedActual(message);
+		cout << "process received work " << MY_RANK << endl;
+		actualSolution = UnpackActualSolution(packedActual);
+		chessPiecesPositions = GetChessPieces();
+		moveCounter = actualSolution.size();
+		int noWorkCounter = 0;
+		int noWork = 0;
+		int workReq = 0;
+		MPI_Request request;
+
+		while (actualSolution.size() != 0 || noWork)
+		{
+			citac++;
+			if ((citac % CHECK_MSG_AMOUNT) == 0)
+			{
+				int flag;
+				MPI_Status status;
+				MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &status);
+				char message[LENGTH];
+
+				if (flag)
+				{
+					if (status.MPI_TAG == MSG_WORK_REQUEST)
+					{
+						int source;
+						MPI_Recv(&source, LENGTH, MPI_INT, status.MPI_SOURCE, MSG_WORK_REQUEST, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+						cout << "no work from process " << source << endl;
+						if (actualSolution.back().GetNextCoordinates().size() < 2)
+						{
+							MPI_Isend(&noWork, 1, MPI_INT, source, MSG_WORK_NOWORK, MPI_COMM_WORLD, &request);
+						}
+						else
+						{
+							SendActualSolution(status.MPI_SOURCE);
+						}
+						cout << "process " << MY_RANK << " sent work;" << endl;
+					}
+					else if (status.MPI_TAG == MSG_WORK_SENT)
+					{
+						noWorkCounter = 0;
+						MPI_Recv(message, LENGTH, MPI_CHAR, workReq, MSG_WORK_SENT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+						cout << "process " << MY_RANK << " received work" << endl;
+						noWork = 0;
+						string packedActual(message);
+						actualSolution = UnpackActualSolution(packedActual);
+						chessPiecesPositions = GetChessPieces();
+						moveCounter = actualSolution.size();
+					}
+					else if (status.MPI_TAG == MSG_WORK_NOWORK)
+					{
+						if (noWorkCounter == (PROCESSORS - 1))
+						{
+							noWorkCounter = 0;
+							cout << " sleeping " << endl;
+							this_thread::sleep_for(chrono::milliseconds(100));
+							MPI_Send(&MY_RANK, 1, MPI_INT, 0, MSG_WORK_REQUEST, MPI_COMM_WORLD);
+
+
+						}
+						else
+						{
+							noWorkCounter++;
+							workReq = status.MPI_SOURCE + 1;
+							if (workReq == MY_RANK)
+							{
+								workReq++;
+							}
+							if (workReq >= PROCESSORS)
+							{
+								workReq = 0;
+							}
+
+							MPI_Send(&MY_RANK, 1, MPI_INT, workReq, MSG_WORK_REQUEST, MPI_COMM_WORLD);
+							cout << "process " << MY_RANK << " no work" << endl;
+						}
+					}
+					else if (status.MPI_TAG == MSG_TOKEN)
+					{
+						MPI_Recv(&token, 1, MPI_INT, MPI_ANY_SOURCE, MSG_TOKEN, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+						if(token == 0 && actualSolution.size() != 0)
+						{
+							token == 1;
+						}
+						if ((MY_RANK + 1) == PROCESSORS)
+						{
+
+							MPI_Isend(&token, 1, MPI_INT, 0, MSG_TOKEN, MPI_COMM_WORLD, &request);
+
+						}
+						else
+						{
+							MPI_Isend(&token, 1, MPI_INT, MY_RANK + 1, MSG_TOKEN, MPI_COMM_WORLD, &request);
+						}
+
+/*
+
+						if (actualSolution.size() == 0)
+						{
+							token = 1;
+						}
+						else
+						{
+							token = 0;
+						}*/
+						
+						cout << "process " << MY_RANK << " sent token from token;" << endl;
+
+					}
+					else if (status.MPI_TAG == MSG_FINISH)
+					{
+						MPI_Barrier(MPI_COMM_WORLD);
+						t2 = MPI_Wtime();
+						printf("%d: Elapsed time is %f.\n", MY_RANK, t2 - t1);
+						MPI_Finalize();	
+						exit(0);
+					}
+					else
+					{
+						//chyba("neznamy typ zpravy"); 
+					}
+				}
+			}
+			ExpandSolution(&chessPiecesPositions, &moveCounter, &minimalnaCena);
+		}
+	}
+
+	t2 = MPI_Wtime();
+	printf("%d: Elapsed time is %f.\n", MY_RANK, t2 - t1);
+	cout << "Count is " << citac << endl;
+	MPI_Finalize();
 	return 0;
 }
