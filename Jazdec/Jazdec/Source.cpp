@@ -13,12 +13,13 @@
 #include <mpi.h>
 
 #define LENGTH 10000
-#define CHECK_MSG_AMOUNT 100
+#define CHECK_MSG_AMOUNT 10
 #define MSG_WORK_REQUEST 1000
 #define MSG_WORK_SENT    1001
 #define MSG_WORK_NOWORK  1002
 #define MSG_TOKEN        1003
 #define MSG_FINISH       1004
+#define MSG_BCAST        1005
 
 using namespace std;
 
@@ -767,6 +768,8 @@ list<Coordinate> GetChessPieces()
 	return chessPiecesPositions;
 }
 
+#include <chrono>
+#include <thread>
 int blabla = 0;
 void ExpandSolution(list<Coordinate> *chessPiecesPositions, int* moveCounter, int* minimalnaCena)
 {
@@ -800,12 +803,19 @@ void ExpandSolution(list<Coordinate> *chessPiecesPositions, int* moveCounter, in
 
 	if ((*chessPiecesPositions).size() == 0 && (*moveCounter) < (*minimalnaCena))
 	{
-		MPI_Bcast(minimalnaCena, 1, MPI_INT, 0, MPI_COMM_WORLD);
-		(*minimalnaCena) = (*moveCounter);
 		m_bestSolution = actualSolution;
-		cout << "process " << MY_RANK << " found solution" << endl;
+		(*minimalnaCena) = m_bestSolution.size() - 1;
+		//(*minimalnaCena) = *moveCounter;
 
+		//MPI_Bcast(minimalnaCena, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		MPI_Request request;
+		MPI_Isend(minimalnaCena, 1, MPI_INT, 0, MSG_BCAST, MPI_COMM_WORLD, &request);
+		cout << "process " << MY_RANK << " found solution "<< m_bestSolution.size() << " and sent price  " << *minimalnaCena << endl;
+		for (auto coordinate : m_bestSolution)
+		{
+			cout << coordinate.GetCoordinate().GetX() << "," << coordinate.GetCoordinate().GetY() << "|";
+		};
+		cout << endl;
 		if ((*minimalnaCena) == m_configuration.GetNumberOfChessPieces())
 		{
 			for (int i = 0; i < PROCESSORS; i++)
@@ -878,8 +888,106 @@ void SendFirstSolution(int processNumber)
 	MPI_Isend(message2, strlen(message2) + 1, MPI_CHAR, 3, MSG_WORK_SENT, MPI_COMM_WORLD, &request);
 }
 
-#include <chrono>
-#include <thread>
+
+void SendFirstSolution2(int processNumber)
+{
+	//copy of actual solution
+	list<CoordinateWithValue> send1 = actualSolution;
+	list<CoordinateWithValue> send2 = actualSolution;
+	list<CoordinateWithValue> send3 = actualSolution;
+	list<CoordinateWithValue> send4 = actualSolution;
+	list<CoordinateWithValue> send5 = actualSolution;
+	list<CoordinateWithValue> send6 = actualSolution;
+	list<CoordinateWithValue> send7 = actualSolution;
+	//temp obsahuje vsetky mozne skoky a teda sa bude delit
+	list<CoordinateWithValue> temp = actualSolution.back().GetNextCoordinates();
+	int size = temp.size();
+
+	//list ktory bude novy pre send.back.next
+	list<CoordinateWithValue> sendNext1;
+	list<CoordinateWithValue> sendNext2;
+	list<CoordinateWithValue> sendNext3;
+	list<CoordinateWithValue> sendNext4;
+	list<CoordinateWithValue> sendNext5;
+	list<CoordinateWithValue> sendNext6;
+	list<CoordinateWithValue> sendNext7;
+
+	sendNext1.push_back(temp.front());
+	temp.pop_front();
+	sendNext2.push_back(temp.front());
+	temp.pop_front();
+	sendNext3.push_back(temp.front());
+	temp.pop_front();
+	sendNext4.push_back(temp.front());
+	temp.pop_front();
+	sendNext5.push_back(temp.front());
+	temp.pop_front();
+	sendNext6.push_back(temp.front());
+	temp.pop_front();
+	sendNext7.push_back(temp.front());
+	temp.pop_front();
+
+	for (int i = 0; i < size; i++)
+	{
+		//do noveho listu pridame prvy zo vsetkych a zo vsetkych prvy odstranime
+	}
+
+	//na posielaci solution nastavime novy list a na stary zvysok
+	send1.back().SetNextList(sendNext1);
+	send2.back().SetNextList(sendNext2);
+	send3.back().SetNextList(sendNext3);
+	send1.back().SetNextList(sendNext4);
+	send2.back().SetNextList(sendNext5);
+	send3.back().SetNextList(sendNext6);
+	send3.back().SetNextList(sendNext7);
+	actualSolution.back().SetNextList(temp);
+
+
+	string sendMessage = PackActualSolution(&send1);
+
+	char message[10000];
+	strcpy(message, sendMessage.c_str());
+	MPI_Request request;
+	MPI_Isend(message, strlen(message) + 1, MPI_CHAR, 1, MSG_WORK_SENT, MPI_COMM_WORLD, &request);
+
+	sendMessage = PackActualSolution(&send2);
+
+	char message1[10000];
+	strcpy(message1, sendMessage.c_str());
+	MPI_Isend(message1, strlen(message1) + 1, MPI_CHAR, 2, MSG_WORK_SENT, MPI_COMM_WORLD, &request);
+
+	sendMessage = PackActualSolution(&send3);
+
+	char message2[10000];
+	strcpy(message2, sendMessage.c_str());
+	MPI_Isend(message2, strlen(message2) + 1, MPI_CHAR, 3, MSG_WORK_SENT, MPI_COMM_WORLD, &request);
+
+	sendMessage = PackActualSolution(&send4);
+
+	char message3[10000];
+	strcpy(message3, sendMessage.c_str());
+	MPI_Isend(message3, strlen(message3) + 1, MPI_CHAR, 4, MSG_WORK_SENT, MPI_COMM_WORLD, &request);
+
+	sendMessage = PackActualSolution(&send5);
+
+	char message4[10000];
+	strcpy(message4, sendMessage.c_str());
+	MPI_Isend(message4, strlen(message4) + 1, MPI_CHAR, 5, MSG_WORK_SENT, MPI_COMM_WORLD, &request);
+
+	sendMessage = PackActualSolution(&send6);
+
+	char message5[10000];
+	strcpy(message5, sendMessage.c_str());
+	MPI_Isend(message5, strlen(message5) + 1, MPI_CHAR, 6, MSG_WORK_SENT, MPI_COMM_WORLD, &request);
+
+	sendMessage = PackActualSolution(&send7);
+
+	char message6[10000];
+	strcpy(message6, sendMessage.c_str());
+	MPI_Isend(message6, strlen(message6) + 1, MPI_CHAR, 7, MSG_WORK_SENT, MPI_COMM_WORLD, &request);
+
+}
+
 
 int main(int argc, char **argv)
 {
@@ -926,6 +1034,10 @@ int main(int argc, char **argv)
 		else if (PROCESSORS == 2)
 		{
 			SendActualSolution(1);
+		}
+		else if (PROCESSORS == 8)
+		{
+			SendFirstSolution2(1);
 		}
 		int noWorkCounter = 0;
 		int noWork = 0;
@@ -977,7 +1089,7 @@ int main(int argc, char **argv)
 					else if (status.MPI_TAG == MSG_WORK_NOWORK)
 					{
 						int rec;
-						MPI_Recv(&rec, 1, MPI_INT, status.MPI_SOURCE, MSG_WORK_NOWORK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+						MPI_Recv(&rec, LENGTH, MPI_INT, status.MPI_SOURCE, MSG_WORK_NOWORK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 						if (noWorkCounter == (PROCESSORS - 1))
 						{
 
@@ -1017,7 +1129,7 @@ int main(int argc, char **argv)
 					}
 					else if (status.MPI_TAG == MSG_TOKEN)
 					{
-						MPI_Recv(&token, 1, MPI_INT, status.MPI_SOURCE, MSG_TOKEN, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+						MPI_Recv(&token, LENGTH, MPI_INT, status.MPI_SOURCE, MSG_TOKEN, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 						cout << "process " << MY_RANK << " receive token;" << endl;
 
 						if (token == 0)
@@ -1056,11 +1168,38 @@ int main(int argc, char **argv)
 					}
 					else if (status.MPI_TAG == MSG_FINISH)
 					{
-						MPI_Barrier(MPI_COMM_WORLD);
+						int rec;
+						MPI_Recv(&rec, LENGTH, MPI_INT, status.MPI_SOURCE, MSG_FINISH, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+						
+						//this_thread::sleep_for(chrono::milliseconds(2000));
+						//MPI_Barrier(MPI_COMM_WORLD);
 						t2 = MPI_Wtime();
-						printf("%d: Elapsed time is %f.\n", MY_RANK, t2 - t1);
-						MPI_Finalize();
-						exit(0);
+
+						cout << "FINISHING PROCESS " << MY_RANK << endl;
+						cout << "Process " << MY_RANK << " Elapsed time is " << t2 - t1 << endl;
+						cout << "Process " << MY_RANK << " Best Solutionm" << m_bestSolution.size() << endl;
+						for (auto coordinate : m_bestSolution)
+						{
+							cout << coordinate.GetCoordinate().GetX() << "," << coordinate.GetCoordinate().GetY() << "|";
+						};
+
+						cout << endl << "Process " << MY_RANK << " min price" << minimalnaCena << endl;
+
+						//printf("%d: Elapsed time is %f.\n", MY_RANK, t2 - t1);
+						//MPI_Finalize();
+						//exit(0);
+					}
+					else if (status.MPI_TAG == MSG_BCAST)
+					{
+						cout << "received min price" << endl;
+						int rec;
+						MPI_Recv(&rec, LENGTH, MPI_INT, status.MPI_SOURCE, MSG_BCAST, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+						if (rec <= minimalnaCena)
+						{
+							minimalnaCena = rec;
+							MPI_Bcast(&minimalnaCena, 1, MPI_INT, 0, MPI_COMM_WORLD);
+						}
+
 					}
 					else
 					{
@@ -1071,7 +1210,7 @@ int main(int argc, char **argv)
 			}
 			ExpandSolution(&chessPiecesPositions, &moveCounter, &minimalnaCena);
 
-			if (actualSolution.size() == 0 && !workSent)
+			if (actualSolution.size() == 0 && !workSent && PROCESSORS != 1)
 			{
 				noWorkCounter++;
 				noWork = 1;
@@ -1100,7 +1239,8 @@ int main(int argc, char **argv)
 		int noWorkCounter = 0;
 		int noWork = 0;
 		int workSent = 0;
-		int workReq = 0;
+		int workReq = 0; 
+		int doNotAskForWork = 0;
 		MPI_Request request;
 
 		while (actualSolution.size() != 0 || workSent)
@@ -1121,20 +1261,25 @@ int main(int argc, char **argv)
 						MPI_Recv(&source, LENGTH, MPI_INT, status.MPI_SOURCE, MSG_WORK_REQUEST, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 						source = status.MPI_SOURCE;
 						cout << "process x=" << MY_RANK << " got no work from process " << source << endl;
-						if (actualSolution.size() == 0 || actualSolution.back().GetNextCoordinates().size() < 2)
+						
+						if (!doNotAskForWork)
 						{
-							MPI_Isend(&workSent, 1, MPI_INT, source, MSG_WORK_NOWORK, MPI_COMM_WORLD, &request);
-							cout << "process x=" << MY_RANK << " sent no work to " << source << endl;
-						}
-						else
-						{
-							noWorkCounter = 0;
-							SendActualSolution(status.MPI_SOURCE);
-							cout << "process x=" << MY_RANK << " sent work to " << status.MPI_SOURCE << endl;
+							if (actualSolution.size() == 0 || actualSolution.back().GetNextCoordinates().size() < 2)
+							{
+								MPI_Isend(&workSent, 1, MPI_INT, source, MSG_WORK_NOWORK, MPI_COMM_WORLD, &request);
+								cout << "process x=" << MY_RANK << " sent no work to " << source << endl;
+							}
+							else
+							{
+								noWorkCounter = 0;
+								SendActualSolution(status.MPI_SOURCE);
+								cout << "process x=" << MY_RANK << " sent work to " << status.MPI_SOURCE << endl;
+							}
 						}
 					}
 					else if (status.MPI_TAG == MSG_WORK_SENT)
 					{
+						doNotAskForWork = 0;
 						workSent = 0;
 						noWorkCounter = 0;
 						MPI_Recv(message, LENGTH, MPI_CHAR, status.MPI_SOURCE, MSG_WORK_SENT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -1147,40 +1292,56 @@ int main(int argc, char **argv)
 					}
 					else if (status.MPI_TAG == MSG_WORK_NOWORK)
 					{
-						if (noWorkCounter == (PROCESSORS - 1))
-						{
-							noWorkCounter = 0;
-							cout << " sleeping " << endl;
-							this_thread::sleep_for(chrono::milliseconds(100));
-							cout << "process x=" << MY_RANK << " ask for work 0 " << endl;
-							MPI_Isend(&MY_RANK, 1, MPI_INT, 0, MSG_WORK_REQUEST, MPI_COMM_WORLD, &request);
-						}
-						else
-						{
-							noWorkCounter++;
-							workReq = status.MPI_SOURCE;
-							workReq++;
-							if (workReq == MY_RANK)
-							{
-								workReq++;
-							}
-							if (workReq >= PROCESSORS)
-							{
-								workReq = 0;
-							}
 
-							cout << "process x=" << MY_RANK << " ask for work " << workReq << endl;
-							MPI_Send(&MY_RANK, 1, MPI_INT, workReq, MSG_WORK_REQUEST, MPI_COMM_WORLD);
+						int rec;
+						MPI_Recv(&rec, LENGTH, MPI_INT, status.MPI_SOURCE, MSG_WORK_NOWORK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+						if (!doNotAskForWork)
+						{
+							if (noWorkCounter == (PROCESSORS - 1))
+							{
+								noWorkCounter = 0;
+								cout << " sleeping " << endl;
+								this_thread::sleep_for(chrono::milliseconds(100));
+								cout << "process x=" << MY_RANK << " ask for work 0 " << endl;
+								MPI_Send(&MY_RANK, 1, MPI_INT, 0, MSG_WORK_REQUEST, MPI_COMM_WORLD);
+							}
+							else
+							{
+								noWorkCounter++;
+								workReq = status.MPI_SOURCE;
+								workReq++;
+								if (workReq == MY_RANK)
+								{
+									workReq++;
+								}
+								if (workReq >= PROCESSORS)
+								{
+									workReq = 0;
+								}
+
+								cout << "process x=" << MY_RANK << " ask for work " << workReq << endl;
+								MPI_Send(&MY_RANK, 1, MPI_INT, workReq, MSG_WORK_REQUEST, MPI_COMM_WORLD);
+								//MPI_Isend(&MY_RANK, 1, MPI_INT, workReq, MSG_WORK_REQUEST, MPI_COMM_WORLD, &request);
+							}
 						}
 					}
 					else if (status.MPI_TAG == MSG_TOKEN)
 					{
-						MPI_Recv(&token, 1, MPI_INT, status.MPI_SOURCE, MSG_TOKEN, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+						MPI_Recv(&token, LENGTH, MPI_INT, status.MPI_SOURCE, MSG_TOKEN, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 						cout << "process x=" << MY_RANK << " receive token;" << endl;
 
 						if(token == 0 && actualSolution.size() != 0)
 						{
 							token = 1;
+							doNotAskForWork = 0;
+						}
+						
+						if (token == 0)
+						{
+							//MPI_Barrier(MPI_COMM_WORLD);
+							doNotAskForWork = 1;
+
 						}
 
 						if ((MY_RANK + 1) == PROCESSORS)
@@ -1210,11 +1371,24 @@ int main(int argc, char **argv)
 					}
 					else if (status.MPI_TAG == MSG_FINISH)
 					{
-						MPI_Barrier(MPI_COMM_WORLD);
+						
+						int rec;
+						MPI_Recv(&rec, LENGTH, MPI_INT, status.MPI_SOURCE, MSG_FINISH, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+						//MPI_Barrier(MPI_COMM_WORLD);
 						t2 = MPI_Wtime();
-						printf("%d: Elapsed time is %f.\n", MY_RANK, t2 - t1);
-						MPI_Finalize();
-						exit(0);
+						cout << "FINISHING PROCESS " << MY_RANK << endl;
+						cout << "Process " << MY_RANK << " Elapsed time is " << t2 - t1 << endl;
+						
+						for (auto coordinate : m_bestSolution)
+						{
+							cout << coordinate.GetCoordinate().GetX() << "," << coordinate.GetCoordinate().GetY() << "|";
+						};
+
+						cout << endl << "Process " << MY_RANK << " Best Solutionm" << m_bestSolution.size() << endl;
+						cout << "Process " << MY_RANK << " min price" << minimalnaCena << endl;
+						//printf("%d: Elapsed time is %f.\n", MY_RANK, t2 - t1);
+						//MPI_Finalize();
+						//exit(0);
 
 						/*MPI_Barrier(MPI_COMM_WORLD);
 
